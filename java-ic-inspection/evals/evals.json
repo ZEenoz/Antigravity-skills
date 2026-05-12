@@ -1,0 +1,23 @@
+{
+  "skill_name": "java-ic-inspection",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a Java class named 'CanFrame' that supports CAN FD. It should include fields for Message ID (extended support), DLC (up to 64 bytes), Data payload (byte array), and a flag for Bit Rate Switch (BRS).",
+      "expected_output": "Java class with appropriate fields and CAN FD specific flags.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Implement a 'CanBusMock' class that simulates receiving CAN frames. It should have a method to register a 'FrameListener' and a thread that periodically sends a dummy CAN FD frame with a 64-byte payload.",
+      "expected_output": "Java code implementing a mock bus with a listener pattern and threading.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Write a Java utility to parse a CAN signal from a byte array. Given a start bit and bit length, extract the value as an integer (e.g., extract a 12-bit signal starting at bit 8 from a 64-byte payload).",
+      "expected_output": "Bit manipulation logic in Java to extract signals from raw byte arrays.",
+      "files": []
+    }
+  ]
+}
