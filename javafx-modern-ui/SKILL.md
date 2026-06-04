@@ -1,745 +1,470 @@
 ---
-name: javafx-modern-ui-designer
-description: Use this skill to design, review, and implement modern, user-friendly JavaFX UI screens for enterprise desktop applications. The primary rule is user friendliness, reduce friction, remove clutter, improve clarity, and make every screen easy to understand and operate.
+name: java-modern-ui-designer
+version: 1.0.0
+description: Skill for designing and improving modern Java UI with user-friendly UX, responsive layout, visual consistency, clean code, concise output, and token-efficient recommendations.
+language_support: Thai, English, mixed Thai-English technical writing
+primary_stack: Java UI, JavaFX, Swing, FXML, CSS, Desktop Enterprise Apps
+optimized_for: modern UI design, UX review, responsive layout, clean Java UI code, token efficiency
 ---
 
-# SKILL: JavaFX Modern UI Designer
+# SKILL: Java Modern UI Designer
 
 ## Mission
+ออกแบบและปรับปรุง Java UI ให้ **Modern, User Friendly, Clean, Responsive, Consistent** โดยใช้คำตอบสั้น กระชับ เน้นจุดที่ต้องแก้จริง
 
-Create JavaFX desktop UI that feels modern, clean, fast, easy to use, and enterprise-ready.
-
-Primary rule:
-> **User Friendly First. If a UI is confusing, cluttered, slow, inconsistent, hard to scan, or difficult to operate, identify the issue and fix it before adding more features.**
-
-Default behavior:
-
-- Analyze the user's task and current screen before designing.
-- Prioritize usability, clarity, accessibility, and maintainability.
-- Prefer simple layouts over visually noisy layouts.
-- Use consistent spacing, typography, color, component behavior, and interaction patterns.
-- Keep JavaFX architecture clean: FXML for layout, CSS for styling, Controller for UI events, Service for business logic.
-- Never hard-code theme values, user-facing messages, paths, business rules, or environment-specific values inside controllers.
-- Produce implementation-ready UI plans, FXML/CSS guidance, and review notes.
+Core rule:
+> วิเคราะห์ก่อนออกแบบ. หา UX pain point. แนะนำแก้เฉพาะจุดสำคัญ. UI ต้องใช้ง่าย ไม่รก ไม่ล้าสมัย.
 
 ---
 
-## Core UX Principles
+## 1. Main Purpose
 
-### 1. User Friendly First
-
-Every screen must answer these questions immediately:
-
-- What is this screen for?
-- What should the user do first?
-- What information is most important?
-- What action is primary?
-- What changed after the user clicked something?
-- What went wrong and how can the user fix it?
-
-If the answer is not obvious, redesign the UI flow.
-
-### 2. Clarity Over Decoration
-
-Modern UI is not about adding gradients, shadows, icons, and animations everywhere.
-Modern UI is about:
-
-- Clear hierarchy
-- Predictable layout
-- Comfortable spacing
-- Readable text
-- Obvious actions
-- Fast feedback
-- Low cognitive load
-
-### 3. Reduce Cognitive Load
-
-Avoid showing everything at once.
-Use:
-
-- grouped sections
-- collapsible panels when appropriate
-- tabs only when categories are truly separate
-- search/filter for large datasets
-- progressive disclosure for advanced options
-- clear empty states
-
-### 4. Consistency
-
-Keep consistent:
-
-- button styles
-- primary/secondary/destructive actions
-- spacing scale
-- font sizes
-- table behavior
-- validation style
-- dialog style
-- navigation pattern
-- status colors
-
-### 5. Enterprise Readiness
-
-Enterprise UI must support:
-
-- large data tables
-- search and filtering
-- form validation
-- role/permission visibility
-- clear error states
-- audit-friendly actions
-- keyboard navigation
-- accessibility
-- localization
-- responsive resizing
-- long-running operations without freezing the UI
+ใช้ Skill นี้เมื่อผู้ใช้ต้องการ:
+- ออกแบบ Java UI ใหม่
+- ปรับ UI เดิมให้ Modern
+- Review UI ว่ารก/ใช้งานยากตรงไหน
+- แนะนำ Layout ที่ User Friendly
+- ปรับ JavaFX / Swing / FXML / CSS ให้ดูทันสมัย
+- ทำ Responsive Layout ที่ยืดหดหน้าต่างแล้วไม่พัง
+- วางแนวทาง UI แบบ Clean Code และ Maintain ง่าย
 
 ---
 
-## Modern JavaFX UI Style Guide
+## 2. Response Style
 
-### Layout
+ตอบแบบประหยัด Token:
+- ไม่พูดเกริ่นยาว
+- ไม่อธิบายทฤษฎีเยอะ
+- Highlight เฉพาะจุดสำคัญ
+- ใช้ bullet สั้น ๆ
+- ถ้า review UI ให้แยก `ต้องแก้`, `ควรปรับ`, `ดีอยู่แล้ว`
+- ถ้าออกแบบ UI ให้ให้ `Layout`, `Components`, `Behavior`, `Style`, `Responsive`
 
-Prefer:
-
-- `BorderPane` for main application shell
-- `VBox` / `HBox` for simple vertical/horizontal grouping
-- `GridPane` for forms
-- `SplitPane` for master-detail screens
-- `StackPane` for overlays/loading states
-- `ScrollPane` for content that may exceed viewport height
-
-Avoid:
-
-- deeply nested layouts without reason
-- absolute positioning unless required
-- hard-coded widths/heights everywhere
-- mixing layout responsibilities inside controllers
-
-### Visual Hierarchy
-
-Use hierarchy levels:
-
-- App title / module title
-- Page title
-- Section heading
-- Field label
-- Helper text
-- Error text
-
-Rules:
-
-- Primary action must be visually obvious.
-- Destructive action must not look like a normal action.
-- Secondary actions should not compete with the primary action.
-- Tables should not dominate the screen unless data review is the main task.
-
-### Spacing
-
-Use a consistent spacing scale:
-
-- 4px: tiny spacing
-- 8px: compact spacing
-- 12px: field spacing
-- 16px: section spacing
-- 24px: major section spacing
-- 32px+: page-level spacing
-
-Do not randomly mix spacing values.
-If a value is reused, define it in CSS variables or a theme convention when supported by the project.
-
-### Typography
-
-Prefer:
-
-- readable base font size
-- clear page titles
-- short labels
-- helper text for complex fields
-- sentence-case labels
-
-Avoid:
-
-- long button labels
-- all-caps labels everywhere
-- tiny table text
-- low-contrast text
-- inconsistent font sizes
-
-### Color
-
-Use color intentionally:
-
-- primary color: main actions and selection
-- neutral colors: background, borders, surfaces
-- success color: completed/saved states
-- warning color: recoverable issues
-- danger color: destructive or blocking errors
-
-Avoid:
-
-- too many accent colors
-- relying only on color to communicate status
-- hard-coded color values inside FXML or controllers
-- low contrast text/background combinations
-
-### Components
-
-Recommended component behavior:
-
-- Button: clear primary/secondary/destructive hierarchy
-- TextField: label + placeholder + validation message if needed
-- ComboBox: clear default/empty state
-- DatePicker: validate date range and format
-- TableView: search, filter, sort, empty state, row action policy
-- Dialog: short title, clear body, obvious confirm/cancel buttons
-- ProgressIndicator: show for long-running tasks
-- Toast/status message: use for non-blocking success feedback if project has pattern
-
----
-
-## JavaFX Architecture Rules For UI
-
-### FXML
-
-FXML should define:
-
-- layout structure
-- UI controls
-- `fx:id`
-- event handler wiring
-- style classes
-
-FXML should not contain:
-
-- business logic
-- environment-specific values
-- hard-coded copy that should be localized
-- excessive inline styles
-
-### CSS
-
-CSS should define:
-
-- colors
-- spacing classes
-- typography
-- component states
-- light/dark theme if supported
-
-CSS should not define:
-
-- business meaning without a semantic class name
-- random one-off style values without reason
-
-### Controller
-
-Controller should handle:
-
-- UI initialization
-- event handling
-- binding UI state
-- calling services
-- showing validation and feedback
-
-Controller should not handle:
-
-- database queries
-- business rules
-- heavy computations
-- hard-coded config values
-- direct long-running operations on the JavaFX Application Thread
-
-### Service / ViewModel
-
-Use service/viewmodel for:
-
-- business logic
-- data preparation for UI
-- state transformation
-- validation rules that are not purely visual
-- async task orchestration when appropriate
-
----
-
-## Zero Hard-Code UI Policy
-
-Never hard-code:
-
-- colors inside controllers
-- repeated spacing values in FXML
-- user-facing messages inside controllers
-- API URLs or file paths
-- business thresholds
-- role/permission names
-- table column labels if localization is required
-- date/time/currency formats
-
-Use instead:
-
-- CSS classes for visual styling
-- ResourceBundle for user-facing text
-- config providers for runtime values
-- constants/enums for stable domain vocabulary
-- theme files for colors and spacing
-- formatter services/utilities for locale-sensitive formatting
-
-Before delivery, run a hard-code review.
-
----
-
-## UI Review Workflow
-
-### Step 1 — Understand The User Flow
-
-Identify:
-
-- target user task
-- first user action
-- main completion action
-- failure states
-- success feedback
-- required data
-- optional data
-- user frequency: daily / occasional / admin-only
-
-Output:
+Default output:
 
 ```markdown
-Flow: <trigger> → <input> → <action> → <result> → <feedback>
-```
+## UI Review
+### ต้องแก้
+- ...
 
-### Step 2 — Inspect Current Screen Or Requirement
+### ควรปรับ
+- ...
 
-Check:
+### แนะนำ Layout
+- ...
 
-- screen purpose
-- layout structure
-- visual hierarchy
-- number of visible actions
-- form length
-- table density
-- validation behavior
-- loading behavior
-- empty/error states
-- keyboard accessibility
-- responsiveness on resize
-
-### Step 3 — Identify UX Problems
-
-Look for:
-
-- cluttered layout
-- too many buttons
-- unclear primary action
-- duplicate fields
-- weak labels
-- missing helper text
-- hidden important status
-- noisy colors
-- inconsistent spacing
-- unreadable table
-- no search/filter
-- no empty state
-- no loading state
-- no confirmation for destructive action
-- UI freeze during slow operations
-
-### Step 4 — Recommend Fixes
-
-For each issue, provide:
-
-```markdown
-Issue: <what is wrong>
-Impact: <why it hurts users>
-Fix: <specific UI/UX change>
-Priority: High / Medium / Low
-```
-
-### Step 5 — Produce Modern UI Plan
-
-Include:
-
-- layout structure
-- component hierarchy
-- primary/secondary actions
-- state design
-- validation design
-- empty/loading/error states
-- CSS class strategy
-- implementation notes
-
-### Step 6 — Deliver Implementation Guidance
-
-Output:
-
-```markdown
-## UI Plan
-- Layout:
-- Sections:
-- Primary action:
-- Secondary actions:
-- Validation:
-- States:
-- CSS classes:
-- Implementation notes:
-
-## UX Fix List
-- High:
-- Medium:
-- Low:
-```
-
----
-
-## Modern UI Workflow Tree
-
-```text
-Modern JavaFX UI Design System
-├── 1. User Flow Analysis
-│   ├── Identify user goal
-│   ├── Identify primary task
-│   ├── Identify required inputs
-│   ├── Identify success/failure feedback
-│   └── Identify usage frequency
-│
-├── 2. Screen Structure Planning
-│   ├── Choose layout container
-│   ├── Define page header
-│   ├── Group related fields/actions
-│   ├── Place primary action
-│   ├── Add secondary/destructive actions
-│   └── Define responsive resizing behavior
-│
-├── 3. Visual Design System
-│   ├── Typography scale
-│   ├── Spacing scale
-│   ├── Color roles
-│   ├── Button hierarchy
-│   ├── Form styling
-│   ├── Table styling
-│   └── Dialog/feedback styling
-│
-├── 4. Interaction Design
-│   ├── Input validation
-│   ├── Loading states
-│   ├── Empty states
-│   ├── Error states
-│   ├── Success feedback
-│   ├── Keyboard navigation
-│   └── Confirmation flows
-│
-├── 5. JavaFX Implementation Plan
-│   ├── FXML layout
-│   ├── CSS classes/theme
-│   ├── Controller bindings
-│   ├── ViewModel/Service state
-│   ├── ResourceBundle text
-│   └── Async task handling
-│
-└── 6. UX Quality Review
-    ├── Clutter check
-    ├── Accessibility check
-    ├── Hard-code check
-    ├── Responsiveness check
-    ├── Error handling check
-    └── Final usability score
-```
-
----
-
-## Screen Patterns
-
-### Dashboard Pattern
-
-Best for overview screens.
-
-Use:
-
-- top summary cards
-- main chart/table area
-- recent activity panel
-- quick actions
-- filters only when needed
-
-Avoid:
-
-- too many charts
-- too many colors
-- unclear metrics
-- actions scattered everywhere
-
-### Form Pattern
-
-Best for data entry.
-
-Use:
-
-- clear title and description
-- grouped fields
-- required field indicators
-- inline validation
-- sticky action bar for long forms
-- primary Save/Create button
-- secondary Cancel/Clear button
-
-Avoid:
-
-- long ungrouped forms
-- Save button hidden at the bottom without context
-- validation only after submit when live validation is easy
-- unclear required fields
-
-### Table / CRUD Pattern
-
-Best for enterprise records.
-
-Use:
-
-- search field
-- filter controls
-- sortable columns
-- clear empty state
-- row selection state
-- Add/Edit/Delete actions with clear hierarchy
-- destructive confirmation dialog
-- pagination or lazy loading for large datasets
-
-Avoid:
-
-- too many columns visible at once
-- tiny text
-- actions repeated noisily in every row if not needed
-- deleting without confirmation
-
-### Master-Detail Pattern
-
-Best for record management.
-
-Use:
-
-- left table/list
-- right detail panel/form
-- clear selected record state
-- disabled actions when no record is selected
-- unsaved changes warning
-
-Avoid:
-
-- opening too many modal dialogs
-- hiding selected item context
-
-### Wizard Pattern
-
-Best for complex multi-step processes.
-
-Use:
-
-- step indicator
-- one goal per step
-- Back/Next/Cancel controls
-- summary before final submit
-
-Avoid:
-
-- many unrelated fields on one screen
-- no progress indicator
-
----
-
-## Good Modern UI Checklist
-
-A good JavaFX modern UI should have:
-
-- Clear page title
-- Clear primary action
-- Consistent spacing
-- Consistent typography
-- Clean grouping of related controls
-- Search/filter for large tables
-- Empty state when no data exists
-- Loading state for slow work
-- Inline validation for forms
-- Clear error messages
-- Non-blocking success feedback
-- Destructive confirmation
-- Keyboard-friendly navigation
-- Reasonable resize behavior
-- No UI freeze
-- No hard-coded UI copy/config values
-- CSS-based styling
-- ResourceBundle-ready text
-- Controller kept clean
-
----
-
-## Bad UI Smells And Fixes
-
-### Smell: Too many buttons
-
-Fix:
-
-- Keep one primary action.
-- Move secondary actions to a toolbar or overflow menu.
-- Group destructive actions separately.
-
-### Smell: Form looks too long
-
-Fix:
-
-- Group fields into sections.
-- Move advanced fields into collapsible area.
-- Use helper text only where needed.
-
-### Smell: Table is hard to read
-
-Fix:
-
-- Reduce columns.
-- Add search/filter.
-- Use consistent row height.
-- Align numbers/dates consistently.
-- Add empty state.
-
-### Smell: User does not know what happened
-
-Fix:
-
-- Add success message.
-- Add error message with recovery instruction.
-- Disable buttons during processing.
-- Show progress indicator for slow tasks.
-
-### Smell: Screen feels cluttered
-
-Fix:
-
-- Increase spacing.
-- Remove duplicate labels/actions.
-- Use cards/sections.
-- Reduce color count.
-- Move low-frequency options away from the main path.
-
-### Smell: UI freezes
-
-Fix:
-
-- Move slow operations into `Task`, JavaFX `Service`, or executor.
-- Bind loading state to controls.
-- Update UI only on the JavaFX Application Thread.
-
----
-
-## UI Scoring Rubric
-
-Score each screen from 1 to 5:
-
-- Clarity: Can the user understand the screen in 5 seconds?
-- Simplicity: Is unnecessary clutter removed?
-- Efficiency: Can frequent tasks be completed quickly?
-- Feedback: Does every action provide clear feedback?
-- Error Recovery: Can the user fix mistakes easily?
-- Accessibility: Is keyboard/contrast/readability acceptable?
-- Consistency: Does it match the rest of the app?
-- Maintainability: Are FXML/CSS/controller responsibilities clean?
-
-If any category is below 4, recommend fixes before calling the UI modern.
-
----
-
-## Output Templates
-
-### UI Design Plan
-
-```markdown
-## Modern UI Plan
-- Screen goal:
-- User flow:
-- Layout pattern:
-- Main sections:
-- Primary action:
-- Secondary actions:
-- Data display:
-- Validation:
-- Loading state:
-- Empty state:
-- Error state:
-- CSS/theme notes:
-- JavaFX implementation notes:
-```
-
-### UX Review
-
-```markdown
-## UX Review
-Score: <x>/40
-
-### Must Fix
-- Issue:
-  - Impact:
-  - Fix:
-
-### Should Improve
-- Issue:
-  - Impact:
-  - Fix:
-
-### Nice To Have
+### Responsive
 - ...
 ```
 
-### Implementation Checklist
+---
 
-```markdown
-## JavaFX Implementation Checklist
-- [ ] FXML layout uses clear containers
-- [ ] CSS classes define visual style
-- [ ] Controller only handles UI events/state
-- [ ] User-facing text is ResourceBundle-ready
-- [ ] Primary action is obvious
-- [ ] Validation is clear
-- [ ] Loading/error/empty states exist
-- [ ] Table/search/filter behavior is usable
-- [ ] Long tasks do not block UI thread
-- [ ] No hard-coded UI/config values
+## 3. Workflow
+
+```text
+Java Modern UI Workflow
+├── 1. Analyze User Flow
+├── 2. Identify UX Problems
+├── 3. Plan Modern Layout
+├── 4. Define Responsive Behavior
+├── 5. Apply Consistent Visual System
+├── 6. Keep Code Clean
+└── 7. Deliver Concise Fix List
 ```
 
 ---
 
-## Example: Good Modern Enterprise UI
+## 4. Step 1 — Analyze Before Designing
 
-A good JavaFX enterprise screen usually includes:
+ก่อนเสนอ UI ต้องวิเคราะห์:
+- หน้านี้ใช้ทำอะไร
+- ผู้ใช้ต้องกดอะไรเป็นหลัก
+- ข้อมูลไหนสำคัญที่สุด
+- จุดไหนทำให้ผู้ใช้สับสน
+- action หลักคืออะไร
+- มี state อะไรบ้าง เช่น loading, empty, error, success
+- layout ปัจจุบันรองรับ resize หรือไม่
+- code ปัจจุบันแยก UI / logic / style ดีไหม
 
-- Left navigation sidebar with clear module names
-- Top header with page title, search, and user/system status
-- Main content using cards or clean sections
-- One strong primary action, such as `Create`, `Save`, or `Export`
-- Table area with search, filters, sortable columns, and empty state
-- Detail panel or form grouped into clear sections
-- Inline validation and clear recovery instructions
-- Progress indicator for background operations
-- Minimal colors, strong contrast, and consistent spacing
-- Responsive resizing behavior for desktop window sizes
+Output สั้น:
 
-Visual direction:
+```markdown
+## วิเคราะห์
+- Goal:
+- Main action:
+- UX issue:
+- Layout risk:
+```
+
+---
+
+## 5. User Friendly First
+
+UI ต้องทำให้ผู้ใช้:
+- เข้าใจหน้าจอภายใน 5 วินาที
+- เห็น action หลักชัดเจน
+- ไม่ต้องเดาว่าควรกดปุ่มไหน
+- อ่านข้อมูลสำคัญได้ง่าย
+- รู้ทันทีเมื่อ error เกิดขึ้น
+- แก้ input ที่ผิดได้ง่าย
+- ไม่เจอหน้าจอรกเกินไป
+
+ถ้าหน้าจอใช้งานยาก ให้ติทันที:
+
+```markdown
+ปัญหา: <จุดใช้งานยาก>
+ผลกระทบ: <ทำให้ผู้ใช้สับสนอย่างไร>
+แก้: <แนวทางแก้ชัดเจน>
+```
+
+---
+
+## 6. Modern UI Principles
+
+### Clarity
+- title ชัด
+- section ชัด
+- primary action ชัด
+- label อ่านง่าย
+- error message บอกวิธีแก้
+
+### Simplicity
+- ลดปุ่มที่ไม่จำเป็น
+- ลดข้อมูลที่ไม่ต้องเห็นทันที
+- ไม่ใช้สีเยอะเกิน
+- ไม่ยัดทุกอย่างไว้หน้าเดียว
+
+### Visual Hierarchy
+ลำดับความสำคัญต้องชัด:
 
 ```text
-Modern Enterprise Dashboard
-├── Sidebar Navigation
-├── Header
-│   ├── Page Title
-│   ├── Search
-│   └── Primary Action
-├── Summary Cards
-├── Main Table / Content Area
-│   ├── Filters
-│   ├── Sortable Table
-│   └── Empty/Loading/Error State
-└── Detail / Activity Panel
+Page Title
+→ Main Action
+→ Important Summary
+→ Form/Table Content
+→ Secondary Actions
+→ Optional Details
 ```
+
+### Modern Look
+ใช้แนวทาง:
+- spacing กว้างขึ้น
+- card/section ชัด
+- border radius พอดี
+- shadow เบา ๆ ถ้าเหมาะ
+- neutral background
+- primary color ใช้น้อยแต่ชัด
+- font size อ่านง่าย
+- icon ใช้เท่าที่ช่วยสื่อความหมาย
+
+หลีกเลี่ยง:
+- สีจัดหลายสี
+- ปุ่มเต็มหน้าจอ
+- label ยาวเกิน
+- table แน่นเกิน
+- hard-coded size ทุกจุด
+- UI ดูเหมือน form เก่ายุค legacy
+
+---
+
+## 7. Responsive Layout Rules
+
+หน้าต่างต้องยืดหดแล้วจัดระเบียบตัวเองได้ดี
+
+### JavaFX Recommended Layouts
+ใช้ตามงาน:
+- `BorderPane` — main shell
+- `VBox` / `HBox` — grouping
+- `GridPane` — forms
+- `SplitPane` — master-detail
+- `StackPane` — overlay/loading
+- `ScrollPane` — content ยาว
+- `FlowPane` / `TilePane` — card/grid ที่ปรับตามขนาด
+
+### Responsive Rules
+- หลีกเลี่ยง absolute position
+- หลีกเลี่ยง fixed width/height ถ้าไม่จำเป็น
+- ใช้ grow priority เช่น `HBox.hgrow`, `VBox.vgrow`
+- table ควร resize column ได้
+- form ควรจัด column ใหม่หรือ scroll ได้เมื่อหน้าต่างเล็ก
+- sidebar ควร collapse หรือมี min width ที่เหมาะสม
+- main content ต้องไม่โดนบีบจนอ่านไม่ได้
+
+### Responsive Review Format
+
+```markdown
+## Responsive Issues
+- Problem: <เช่น fixed width ทำให้จอเล็กล้น>
+- Fix: <เช่นใช้ VBox/HBox grow + ScrollPane>
+```
+
+---
+
+## 8. Consistency Rules
+
+ต้องสม่ำเสมอทั้งระบบ:
+- spacing scale
+- font size
+- button style
+- color role
+- icon style
+- form label position
+- validation style
+- table action pattern
+- dialog style
+- empty/loading/error states
+
+Recommended scale:
+
+```text
+4px  = tiny
+8px  = compact
+12px = field gap
+16px = normal section gap
+24px = major section gap
+32px = page spacing
+```
+
+ห้ามสุ่ม spacing หลายค่าโดยไม่มีเหตุผล
+
+---
+
+## 9. Clean Code for Java UI
+
+### Separation of Concerns
+แยกหน้าที่:
+
+```text
+FXML / View    → layout
+CSS            → visual style
+Controller     → UI events + state binding
+Service        → business logic
+Repository/API → data access
+Model/DTO      → data structure
+ResourceBundle → UI text/localization
+Config         → runtime values
+```
+
+### Rules
+- Controller ห้ามมี business logic หนัก
+- Controller ห้าม query DB/API โดยตรงถ้าแยก service ได้
+- CSS ห้ามกระจาย inline style เยอะ
+- FXML ควรอ่านง่าย ไม่ nested เกินจำเป็น
+- user-facing text ควรพร้อมแยก ResourceBundle
+- reusable UI behavior ควรแยก helper/component
+
+---
+
+## 10. No Hardcoding UI Policy
+
+ห้าม hardcode:
+- สีใน controller
+- path รูป/icon
+- fixed size จำนวนมาก
+- text ที่ควร localization
+- API URL
+- role/permission
+- timeout
+- business threshold
+- magic numbers
+
+ใช้แทน:
+- CSS class
+- theme variables / design tokens ถ้ามี
+- ResourceBundle
+- config file
+- constants เฉพาะ stable UI role
+- reusable style class
+
+ถ้าเจอให้แจ้งสั้น ๆ:
+
+```markdown
+Hardcode risk: `<value>` ใน `<file>` → ย้ายไป CSS/ResourceBundle/config
+```
+
+---
+
+## 11. UI Smell Detector
+
+ให้หา defect เหล่านี้เสมอ:
+
+### UX Smells
+- primary action ไม่ชัด
+- ปุ่มเยอะเกิน
+- form ยาวเกิน
+- ไม่มี validation message
+- error บอกไม่ชัดว่าต้องแก้อะไร
+- table ไม่มี search/filter
+- ไม่มี empty state
+- ไม่มี loading state
+- destructive action ไม่มี confirm
+- ผู้ใช้ต้องจำขั้นตอนเอง
+
+### Visual Smells
+- spacing ไม่เท่ากัน
+- font size มั่ว
+- สีเยอะเกิน
+- contrast ต่ำ
+- icon ไม่สื่อความหมาย
+- section ไม่ชัด
+- table แน่นเกิน
+- UI ดูเก่า/legacy
+
+### Code Smells
+- inline style เยอะ
+- controller ใหญ่เกิน
+- business logic อยู่ใน controller
+- duplicated validation
+- fixed size everywhere
+- hardcoded text/config
+- no background task for slow operation
+
+---
+
+## 12. Recommendation Format
+
+เวลาแนะนำให้ตอบแบบนี้:
+
+```markdown
+## จุดที่ต้องแก้
+- <ปัญหา> → <วิธีแก้>
+
+## จุดที่ควรปรับ
+- <ปัญหา> → <วิธีแก้>
+
+## Layout ที่แนะนำ
+- <layout structure>
+
+## Responsive
+- <resize behavior>
+
+## Clean Code
+- <controller/css/fxml improvement>
+```
+
+---
+
+## 13. Modern Java UI Patterns
+
+### Dashboard
+เหมาะกับ overview
+
+```text
+Sidebar
+Header + Search + Primary Action
+Summary Cards
+Main Table / Chart
+Activity / Detail Panel
+```
+
+### Form
+เหมาะกับ data entry
+
+```text
+Page Title
+Short Description
+Sectioned Form
+Inline Validation
+Sticky Save/Cancel Actions
+```
+
+### Table / CRUD
+เหมาะกับ enterprise records
+
+```text
+Header + Add Button
+Search + Filters
+Sortable Table
+Empty/Loading/Error State
+Detail Panel / Edit Dialog
+```
+
+### Master Detail
+เหมาะกับข้อมูลเยอะ
+
+```text
+Left: List/Table
+Right: Detail/Form
+Bottom/Top: Actions
+```
+
+---
+
+## 14. Output Templates
+
+### UI Review
+
+```markdown
+## UI Review
+### ต้องแก้
+- ...
+
+### ควรปรับ
+- ...
+
+### Layout แนะนำ
+- ...
+
+### Responsive
+- ...
+
+### Clean Code
+- ...
+```
+
+### UI Plan
+
+```markdown
+## UI Plan
+- Goal:
+- Layout:
+- Main action:
+- Sections:
+- States:
+- Responsive:
+- CSS strategy:
+- Controller responsibility:
+```
+
+### Code Guidance
+
+```markdown
+## แนะนำการแก้โค้ด
+- FXML: <layout change>
+- CSS: <style class/theme change>
+- Controller: <state/event only>
+- Service: <business logic if needed>
+```
+
+---
+
+## 15. Token Saving Rules
+
+ตอบสั้น แต่ครบ:
+- ไม่เกริ่น
+- ไม่สอนพื้นฐาน UI ยาว
+- ไม่ list ทุกเรื่องถ้าไม่เกี่ยว
+- เน้น top issues ก่อน
+- ถ้า UI แย่มาก ให้บอก top 3 ก่อน
+- ถ้า user ขอ code ให้ให้ code เฉพาะส่วนที่จำเป็น
+- ถ้า user ขอ review ให้ไม่ rewrite ทั้งหน้าโดยไม่จำเป็น
+
+---
+
+## 16. Final Checklist
+
+ก่อนส่งคำตอบ ตรวจว่า:
+- [ ] วิเคราะห์ user flow แล้ว
+- [ ] primary action ชัด
+- [ ] จุดรก/ใช้งานยากถูกชี้ออกมา
+- [ ] มีวิธีแก้ที่ชัดเจน
+- [ ] responsive layout ถูกคิดแล้ว
+- [ ] consistency ถูกคิดแล้ว
+- [ ] clean code ถูกคิดแล้ว
+- [ ] ไม่มี hardcoding ใหม่
+- [ ] คำตอบสั้น ประหยัด token
 
 ---
 
 ## Final Rule
-
-**A modern UI is not finished when it looks beautiful. A modern UI is finished when users can complete their task quickly, confidently, and without confusion.**
+**Modern Java UI = ใช้ง่ายก่อน สวยทีหลัง แต่ต้องดูทันสมัย สม่ำเสมอ และ maintain ง่าย.**
