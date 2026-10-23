@@ -1,0 +1,26 @@
+{
+  "skill_name": "thesis-report-writer",
+  "evals": [
+    {
+      "id": 0,
+      "name": "chapter-from-written-style-guide",
+      "prompt": "Our faculty's thesis formatting guide is FACULTY_STYLE_GUIDE.md in this folder, and sample_report_2025.docx shows how a finished report looks. Write Chapter 3 (Method) of my thesis on rendering latency in digital test pattern viewers — the raw notes are in notes.md, and viewer_screenshot.png is the figure I want in there. Save it as Chapter_03.docx.",
+      "expected_output": "A Chapter_03.docx written from the notes in English, formatted to the faculty's guide (A4, 2.5 cm margins, Times New Roman 12 pt, justified, 1.5 line spacing, heading sizes 14/16/14 pt, centred caption above the figure), plus a compliance report showing the document matches the guide.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "audit-and-fix-legacy-report",
+      "prompt": "ช่วยตรวจสอบ legacy_report_2024.docx ว่าตรงกับเกณฑ์การเขียนใน FACULTY_STYLE_GUIDE.md ไหม แล้วแก้ให้ตรงตามกฎ ให้ผมรายการของข้อที่ผิดพลาดพร้อม ID ของกฎด้วย",
+      "expected_output": "A rule-ID-indexed audit of the legacy report, the file corrected so it complies with the guide, and the corrected file left in the project folder alongside the audit.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "full-book-skeleton",
+      "prompt": "Build me the complete thesis book skeleton for my internship report as a .docx: both covers, copyright, Thai and English abstract, certification sheet, acknowledgements, table of contents, list of tables, list of figures, abbreviations, chapters 1 to 5, references, appendix and author biography. Same house style as Docs_Rules.md at the root of C:/Users/nxg22304/Desktop/NXP_Program. Pull the project facts (title, what the program does, the five chapters' topics) from that repository, and mark anything you could not find instead of inventing it.",
+      "expected_output": "A single .docx containing the whole book in the house style, with every mandated part present in order, real TOC/list fields, and placeholders rather than invented content where the facts were missing.",
+      "files": []
+    }
+  ]
+}

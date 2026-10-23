@@ -1,0 +1,397 @@
+{
+  "name": "KMITL Faculty of Science — Thai thesis / co-op report",
+  "summary": "The house style used by KMITL Faculty of Science for Thai-language thesis, co-op and special-project reports: TH SarabunPSK on A4, Thai Distributed alignment, a five-chapter body and a fixed front/back matter order.",
+  "source": "Extracted from the KMITL Faculty of Science thesis template (docs/research-report-samples/docx/thai_kmitl_science_thesis_template.docx) and codified as rules R-01..R-64 with the format profile P-01..P-14.",
+  "language": "th",
+  "page": {
+    "width_mm": 210.0,
+    "height_mm": 297.0,
+    "orientation": "portrait",
+    "margin_top_mm": 25.4,
+    "margin_bottom_mm": 25.4,
+    "margin_left_mm": 38.1,
+    "margin_right_mm": 25.4,
+    "header_mm": 12.7,
+    "footer_mm": 12.7,
+    "gutter_mm": 0.0
+  },
+  "fonts": {
+    "body": "TH SarabunPSK",
+    "allowed": [
+      "TH SarabunPSK"
+    ],
+    "sizes_pt": {
+      "body": 16,
+      "chapter_label": 20,
+      "chapter_title": 24,
+      "h2": 18,
+      "h3": 16,
+      "front_heading": 24,
+      "abstract_heading": 17,
+      "cover_title": 20,
+      "cover_name": 18,
+      "cover_meta": 16,
+      "table": 14,
+      "caption": 16
+    }
+  },
+  "paragraphs": {
+    "alignment": "thaiDistribute",
+    "forbidden_alignment": [
+      "both"
+    ],
+    "first_line_tw": 720,
+    "space_after_tw": 120,
+    "space_before_tw": 0,
+    "line_tw": 240,
+    "list_left_tw": 283,
+    "list_hanging_tw": 283,
+    "hint_cs": true
+  },
+  "captions": {
+    "alignment": "center",
+    "table_before_tw": 240,
+    "table_after_tw": 120,
+    "figure_before_tw": 120,
+    "figure_after_tw": 240,
+    "table_label": "ตารางที่",
+    "figure_label": "รูปที่",
+    "table_label_en": "Table",
+    "figure_label_en": "Figure",
+    "source_prefix": "(ที่มา: ",
+    "source_prefix_en": "(Reference(s): "
+  },
+  "tables": {
+    "borders": true,
+    "header_bold": true
+  },
+  "page_numbering": {
+    "front_format": "lowerRoman",
+    "body_format": "decimal",
+    "body_start": 1,
+    "position": "header",
+    "alignment": "center",
+    "number_cover_pages": false
+  },
+  "structure": {
+    "front": [
+      {
+        "kind": "cover",
+        "lang": "th"
+      },
+      {
+        "kind": "cover",
+        "lang": "en"
+      },
+      {
+        "kind": "copyright"
+      },
+      {
+        "kind": "abstract",
+        "lang": "th"
+      },
+      {
+        "kind": "abstract",
+        "lang": "en"
+      },
+      {
+        "kind": "certification"
+      },
+      {
+        "kind": "acknowledgements",
+        "lang": "th"
+      },
+      {
+        "kind": "acknowledgements",
+        "lang": "en"
+      },
+      {
+        "kind": "toc"
+      },
+      {
+        "kind": "list_of_tables"
+      },
+      {
+        "kind": "list_of_figures"
+      },
+      {
+        "kind": "abbreviations"
+      }
+    ],
+    "chapters": [
+      {
+        "number": 1,
+        "label": {
+          "th": "บทที่ 1"
+        },
+        "title": {
+          "th": "บทนำ",
+          "en": "Introduction"
+        }
+      },
+      {
+        "number": 2,
+        "label": {
+          "th": "บทที่ 2"
+        },
+        "title": {
+          "th": "ทฤษฎีและงานวิจัยที่เกี่ยวข้อง",
+          "en": "Theory and literature reviews"
+        }
+      },
+      {
+        "number": 3,
+        "label": {
+          "th": "บทที่ 3"
+        },
+        "title": {
+          "th": "วิธีการดำเนินงานวิจัย",
+          "en": "Research methodology"
+        }
+      },
+      {
+        "number": 4,
+        "label": {
+          "th": "บทที่ 4"
+        },
+        "title": {
+          "th": "ผลการวิจัยและการอภิปรายผล",
+          "en": "Main results and discussion"
+        }
+      },
+      {
+        "number": 5,
+        "label": {
+          "th": "บทที่ 5"
+        },
+        "title": {
+          "th": "สรุปผลการวิจัยและข้อเสนอแนะ",
+          "en": "Conclusions and suggestions"
+        }
+      }
+    ],
+    "back": [
+      {
+        "kind": "references"
+      },
+      {
+        "kind": "appendices"
+      },
+      {
+        "kind": "biography"
+      }
+    ]
+  },
+  "labels": {
+    "copyright": {
+      "th": "COPYRIGHT",
+      "en": "COPYRIGHT"
+    },
+    "abstract": {
+      "th": "บทคัดย่อ",
+      "en": "Abstract"
+    },
+    "certification": {
+      "th": "ใบรับรองวิทยานิพนธ์",
+      "en": "Thesis certification"
+    },
+    "acknowledgements": {
+      "th": "กิตติกรรมประกาศ",
+      "en": "Acknowledgements"
+    },
+    "toc": {
+      "th": "สารบัญ",
+      "en": "Table of contents"
+    },
+    "list_of_tables": {
+      "th": "สารบัญตาราง",
+      "en": "List of tables"
+    },
+    "list_of_figures": {
+      "th": "สารบัญรูป",
+      "en": "List of figures"
+    },
+    "abbreviations": {
+      "th": "คำย่อ/สัญลักษณ์",
+      "en": "Abbreviations/Symbols"
+    },
+    "references": {
+      "th": "เอกสารอ้างอิง",
+      "en": "References"
+    },
+    "appendix": {
+      "th": "ภาคผนวก",
+      "en": "Appendix"
+    },
+    "biography": {
+      "th": "ประวัติผู้เขียน",
+      "en": "Author biography"
+    },
+    "keywords": {
+      "th": "คำสำคัญ :",
+      "en": "Keywords :"
+    },
+    "chapter_label_prefix": {
+      "th": "บทที่",
+      "en": "Chapter"
+    },
+    "cover_by": {
+      "th": "โดย",
+      "en": "by"
+    },
+    "cover_statement": {
+      "th": "วิทยานิพนธ์นี้เป็นส่วนหนึ่งของการศึกษาตามหลักสูตร {degree} สาขาวิชา{department} ชื่อหลักสูตร{degree} ภาควิชา{department} {faculty} {institute} พ.ศ. {year}",
+      "en": "A THESIS SUBMITTED IN PARTIAL FULFILLMENT OF THE REQUIREMENT FOR THE DEGREE OF {degree} IN {department} / DEPARTMENT OF {department} / {faculty} / {institute} / {year}"
+    },
+    "certification_fields": [
+      {
+        "label": {
+          "th": "ชื่อเรื่องวิทยานิพนธ์ (ภาษาไทย)",
+          "en": "Thesis title (Thai)"
+        },
+        "key": "title_th"
+      },
+      {
+        "label": {
+          "th": "ชื่อเรื่องวิทยานิพนธ์ (ภาษาอังกฤษ)",
+          "en": "Thesis title (English)"
+        },
+        "key": "title_en"
+      },
+      {
+        "label": {
+          "th": "ชื่อนักศึกษา",
+          "en": "Student name"
+        },
+        "key": "student_th"
+      },
+      {
+        "label": {
+          "th": "รหัสประจำตัว",
+          "en": "Student id"
+        },
+        "key": "student_id"
+      },
+      {
+        "label": {
+          "th": "ชื่อหลักสูตร",
+          "en": "Degree"
+        },
+        "key": "degree_th"
+      },
+      {
+        "label": {
+          "th": "ภาควิชา",
+          "en": "Department"
+        },
+        "key": "department_th"
+      },
+      {
+        "label": {
+          "th": "อาจารย์ที่ปรึกษาวิทยานิพนธ์",
+          "en": "Advisor"
+        },
+        "key": "advisor"
+      },
+      {
+        "label": {
+          "th": "อาจารย์ที่ปรึกษาร่วม",
+          "en": "Co-advisor"
+        },
+        "key": "co_advisor"
+      },
+      {
+        "label": {
+          "th": "วัน เดือน ปี และเวลาที่สอบ",
+          "en": "Examination date and time"
+        },
+        "key": "exam_date"
+      },
+      {
+        "label": {
+          "th": "สถานที่สอบ",
+          "en": "Examination venue"
+        },
+        "key": "exam_place"
+      }
+    ],
+    "certification_table": {
+      "heading": {
+        "th": "คณะกรรมการสอบวิทยานิพนธ์",
+        "en": "Thesis examination committee"
+      },
+      "columns": [
+        {
+          "th": "ตำแหน่ง",
+          "en": "Position"
+        },
+        {
+          "th": "ลายมือชื่อ",
+          "en": "Signature"
+        }
+      ],
+      "rows": [
+        {
+          "th": "ประธานกรรมการ",
+          "en": "Chair"
+        },
+        {
+          "th": "อาจารย์บัณฑิตประจำ",
+          "en": "Subject lecturer"
+        },
+        {
+          "th": "ผู้ทรงคุณวุฒิจากภายนอกสถาบันฯ",
+          "en": "External qualified person"
+        },
+        {
+          "th": "อาจารย์ที่ปรึกษาวิทยานิพนธ์",
+          "en": "Advisor"
+        },
+        {
+          "th": "อาจารย์ที่ปรึกษาวิทยานิพนธ์ร่วม",
+          "en": "Co-advisor"
+        }
+      ]
+    },
+    "certification_closing": {
+      "th": [
+        "คณะวิทยาศาสตร์รับรองแล้ว",
+        "คณบดีคณะวิทยาศาสตร์",
+        "วันที่ ......... เดือน ............... พ.ศ. ........."
+      ],
+      "en": [
+        "The School of Science has certified this report",
+        "Dean, School of Science",
+        "Date ......... Month ............... Year ........."
+      ]
+    },
+    "certification_signature": {
+      "th": "คณะวิทยาศาสตร์รับรองแล้ว",
+      "en": "School of Science certified"
+    },
+    "copyright_year": {
+      "th": "ปี พ.ศ. {year}",
+      "en": "Year {year}"
+    },
+    "student_id": {
+      "th": "รหัสประจำตัว",
+      "en": "Student ID"
+    },
+    "advisor": {
+      "th": "อาจารย์ที่ปรึกษา",
+      "en": "Advisor"
+    },
+    "co_advisor": {
+      "th": "อาจารย์ที่ปรึกษาร่วม",
+      "en": "Co-advisor"
+    },
+    "abbreviation_column": {
+      "th": "คำย่อ",
+      "en": "Abbreviation"
+    },
+    "abbreviation_meaning": {
+      "th": "ความหมาย",
+      "en": "Meaning"
+    }
+  }
+}

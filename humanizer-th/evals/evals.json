@@ -1,0 +1,67 @@
+{
+  "skill_name": "humanizer-th",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "ช่วยแก้บทความนี้หน่อยครับ จะเอาไปลงบล็อกของบริษัท อยากให้อ่านเหมือนคนเขียน ไม่ใช่ดูเหมือน AI แต่ข้อมูลในเรื่องต้องครบเหมือนเดิม ไม่ต้องเพิ่มอะไรใหม่\n\nชิปวัดผลการผลิตใหม่ช่วยยกระดับการตรวจสอบคุณภาพ\n\nในยุคปัจจุบันโลกมีการเปลี่ยนแปลงเกิดขึ้นอย่างรวดเร็ว อุตสาหกรรมการผลิตชิปก็ไม่ยกเว้น อุตสาหกรรมการผลิตชิปต้องการความแม่นยำสูงขึ้นอย่างต่อเนื่องเพื่อตอบโจทย์ทุกความต้องการของลูกค้า\n\nชิปวัดผลการผลิตใหม่ คือกุญแจสำคัญที่จะเปลี่ยนแปลงวิธีการตรวจสอบคุณภาพของคุณ\n\nมันไม่ใช่แค่เครื่องมือวัดผลการผลิตธรรมดา แต่เป็นสู่พรรภิยมใหม่ที่ถูกออกแบบมาเพื่อยกระดับความสามารถในการวิเคราะห์ข้อมูลของคุณ\n\n## คำถามที่หลายคนอาจสงสัย\n\nคำถามที่หลายคนอาจสงสัยคือ ชิปตัวนี้แก้ปัญหาอะไรได้บ้าง?\n\nชิปวัดผลการผลิตถูกออกแบบมาเพื่อรองรับการทำงานหลายแบบ ทั้งการวัดค่าความแม่นยำ การตรวจสอบความสม่ำเสมอ และการวิเคราะห์ข้อมูลเชิงลึก\n\n- ประสิทธิภาพสูงสุด ประมวลผลได้เร็วกว่ารุ่นก่อน 30%\n- เชื่อมต่อได้ง่าย ใช้งานร่วมกับเครื่องจักรเดิมได้ทันที\n- ข้อมูลปลอดภัย รองรับการเข้ารหัสข้อมูลตามมาตรฐานสากล\n\n## สรุปและข้อเสนอแนะ\n\nโดยสรุปแล้ว ชิปวัดผลการผลิตใหม่นี้เป็นกุญแจสำคัญที่จะช่วยยกระดับการตรวจสอบคุณภาพของคุณไปสู่อีกระดับหนึ่ง หากต้องการให้ช่วยเพิ่มเติม ติดต่อทีมงานได้เลยครับ",
+      "expected_output": "บทความบล็อกภาษาไทยที่อ่านเหมือนคนเขียน ไม่มีคำเปิดแบบ 'ในยุคปัจจุบัน' ไม่มี 'กุญแจสำคัญ' 'สู่พรรภิยม' 'ไม่ใช่แค่...แต่' ปิดท้ายด้วย 'โดยสรุปแล้ว' หรือปิดด้วยการชวนให้ติดต่อ แต่ตัวเลขและความสามารถทั้ง 5 ข้อ (ความแม่นยำ ความสม่ำเสมอ การวิเคราะห์เชิงลึก เร็วกว่ารุ่นก่อน 30% เชื่อมต่อกับเครื่องจักรเดิมได้ทันที เข้ารหัสตามมาตรฐานสากล) ยังอยู่ครบ",
+      "files": [],
+      "expectations": [
+        "The output does not contain the phrase 'ในยุคปัจจุบัน'",
+        "The output does not contain 'กุญแจสำคัญ'",
+        "The output does not contain 'สู่พรรภิยม'",
+        "The output does not contain a not-X-but-Y construction such as 'ไม่ใช่แค่' or 'ไม่ได้มีไว้แค่'",
+        "The output does not contain a one-line closer such as 'โดยสรุปแล้ว' 'ท้ายที่สุด' or 'โดยรวมแล้ว'",
+        "The output does not contain 'ประสิทธิภาพสูงสุด'",
+        "The output does not contain the generic AI closing heading 'สรุปและข้อเสนอแนะ'",
+        "The output preserves the figure '30%' (faster than the previous model)",
+        "The output preserves all three capabilities: 'ความแม่นยำ', 'ความสม่ำเสมอ', and 'วิเคราะห์ข้อมูลเชิงลึก'",
+        "The output preserves the claim about encryption: 'เข้ารหัสข้อมูลตามมาตรฐานสากล'",
+        "The output preserves the claim about working with existing equipment: 'เครื่องจักรเดิม'",
+        "The output introduces no number that is absent from the source text",
+        "The output introduces no fact, product claim, or name that is absent from the source text"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "ช่วยปรับอีเมลฉบับนี้หน่อยครับ ส่งให้ลูกค้าที่เขามาบ่นเรื่องสินค้าชำรุด เราอยากให้ดูสุภาพแต่ไม่เก่งเรื่องภาษา อยากได้แบบที่เป็นทางการแต่ไม่เยงเย้อ ช่วยแก้ให้ตรงประเด็นที่ขอโทษก่อนแล้วบอกว่าเราจะทำอะไรต่อด้วย\n\nเรียน คุณสมชาย\n\nสวัสดีครับ\n\nขออภัยอย่างยิ่งในความไม่สมบูรณ์ของเรา ทางบริษัทขอแสดงความเสียใจอย่างสู้ส่งต่อคุณสมชายที่ประสบกับปัญหาสินค้าชำรุด\n\nอยากให้ชัดเจนว่าไม่ใช่ว่าเราไม่ได้ใส่ใจกับคุณสมชายนะครับ แต่สาเหตุคือในระบบโลจิสติกส์ของเรายังไม่ได้ตรวจสอบสภาพสินค้าก่อนจัดส่งในบางเคส\n\nหลังจากที่ได้รับแจ้งเรื่องนี้ เราได้ดำเนินการตรวจสอบย้อนหลัง และพบว่ามีคำสั่งซื้อที่ได้รับสินค้าชำรุดจำนวน 4 รายการ ทางเราได้จัดส่งสินค้าใหม่ให้ทั้งหมดแล้ว และเรียกคืนเงินค่าขนส่งให้ด้วย\n\nนี่คือสิ่งที่สำคัญที่สุดที่เราต้องการสื่อสารกับคุณสมชาย เราจะไม่ปล่อยให้เกิดขึ้นอีก\n\nหากมีคำถามเพิ่มเติม สามารถติดต่อได้ที่ 02-xxx-xxxx หรือทาง LINE OA ของเราได้เลยครับ\n\nขอแสดงความนับถือ\nสมชาย ใจดี\nผู้จัดการฝ่ายบริการลูกค้า",
+      "expected_output": "อีเมลตอบลูกค้าที่ขอโทษก่อนหนึ่งประโยค บอกสาเหตุ บอกสิ่งที่ทำแล้ว (4 รายการ, ส่งของใหม่, คืนค่าขนส่ง) และมีช่องทางติดต่อ โดยไม่มีคำพูดแชทบอท ไม่มีการอธิบายเกินจำเป็น และไม่เพิ่มข้อมูลใหม่",
+      "files": [],
+      "expectations": [
+        "The output does not contain 'ขออภัยอย่างยิ่งในความไม่สมบูรณ์ของเรา'",
+        "The output does not contain 'อยากให้ชัดเจนว่า'",
+        "The output does not contain 'นี่คือสิ่งที่สำคัญที่สุด'",
+        "The output does not contain 'หากมีคำถามเพิ่มเติม'",
+        "The output does not contain a standalone 'สวัสดีครับ' greeting before the apology",
+        "The output preserves the number '4 รายการ' (defective orders found)",
+        "The output preserves the fact that replacement items were sent to all affected customers",
+        "The output preserves the fact that shipping costs were refunded",
+        "The output preserves the stated cause: item condition was not checked before dispatch",
+        "The output preserves the contact details '02-xxx-xxxx' and 'LINE OA'",
+        "The apology appears before the explanation of what the company did",
+        "The output introduces no number that is absent from the source text",
+        "The output introduces no new commitment, deadline, refund amount, policy, or factual claim that is absent from the source text"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "นี่คือย่อหน้าในบทที่ 4 ของรายงานสหกิจศึกษาที่ผมเขียนด้วย AI แล้วอ่านรู้สึกแปลกมาก ช่วยแก้ให้เป็นภาษาวิชาการภาษาไทยปกติที่อาจารย์ที่ปรึกษาจะอ่านแล้วไม่รู้สึกว่าเขียนด้วย AI แต่ตัวเลขกับผลการอ้างอิงต้องคงเดิมทุกตัว ห้ามเพิ่มข้อมูลที่ไม่มี\n\n4.2 ผลการวิเคราะห์ข้อมูล\n\nโครงการนี้ถูกดำเนินการเก็บข้อมูลจากเครื่องมือวัดผลการผลิตจำนวน 3 ชุด และถูกวิเคราะห์โดยใช้โปรแกรมสถิติ\n\nจากผลการทดสอบ พบว่าค่าความแม่นยำเฉลี่ยของชุดทดสอบทั้งหมดอยู่ที่ 98.4% ซึ่งสะท้อนถึงความสามารถในการตรวจสอบคุณภาพของเครื่องมือที่มีประสิทธิภาพสูงสุด อีกทั้งยังเป็นการสะท้อนให้เห็นถึงความก้าวหน้าอย่างต่อเนื่องของเทคโนโลยีในอุตสาหกรรมการผลิตชิป\n\nการเปรียบเทียบกับงานวิจัยก่อนหน้านี้ พบว่าค่าที่วัดได้มีความสอดคล้องกับผลการศึกษาของ Smith et al. (2022) ซึ่งรายงานค่าความแม่นยำ 97.9% ในสภาพแวดล้อมการทดสอบที่ใกล้เคียงกัน\n\nอย่างไรก็ตาม ยังคงต้องมีการศึกษาเพิ่มเติมในกรณีของการใช้งานจริงในสภาพแวดล้อมการผลิตที่มีความผันผวนสูง ซึ่งอาจส่งผลกระทบต่อค่าความแม่นยำในการวัด\n\nท้ายที่สุดแล้ว ผลการวิจัยนี้ได้สะท้อนให้เห็นถึงศักยภาพของเครื่องมือวัดผลการผลิตที่มีความก้าวหน้าอย่างแท้จริง",
+      "expected_output": "ย่อหน้าภาษาไทยวิชาการที่ไม่มี 'ถูกดำเนินการ' 'การวิเคราะห์' แบบซ้อน ตัดคำที่ทำให้ดูสำคัญเกินจริงออก ตัดบรรทัดปิดท้ายแบบ 'ท้ายที่สุดแล้ว' และ 'สะท้อนถึง' แต่ค่า 98.4% ค่า 97.9% การอ้างอิง Smith et al. (2022) จำนวนเครื่องมือ 3 ชุด และข้อจำกัดเรื่องความผันผวนในสภาพแวดล้อมการผลิต ยังอยู่ครบ",
+      "files": [],
+      "expectations": [
+        "The output does not contain 'ถูกดำเนินการ'",
+        "The output does not contain 'ถูกวิเคราะห์'",
+        "The output does not contain the empty reflector verb 'สะท้อน'",
+        "The output does not contain 'ท้ายที่สุดแล้ว'",
+        "The output does not contain 'ประสิทธิภาพสูงสุด'",
+        "The output preserves the value '98.4%'",
+        "The output preserves the value '97.9%'",
+        "The output preserves the citation 'Smith et al. (2022)'",
+        "The output preserves '3 ชุด' (number of measurement instruments)",
+        "The output preserves the stated limitation: use in real production environments with high variability",
+        "The output introduces no number that is absent from the source text",
+        "The output introduces no new statistic, citation, or factual claim that is absent from the source text"
+      ]
+    }
+  ]
+}

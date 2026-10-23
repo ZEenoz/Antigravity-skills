@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "humanizer-th",
+  "description": "แก้ข้อความภาษาไทยที่ดูเหมือน AI เขียน ให้อ่านเหมือนคนเขียน โดยไม่เปลี่ยนสาระ",
+  "version": "1.0.0",
+  "license": "MIT",
+  "keywords": ["writing", "editing", "humanize", "prose", "style", "thai", "ภาษาไทย"],
+  "skills": ["./"]
+}
