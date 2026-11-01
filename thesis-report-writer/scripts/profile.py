@@ -42,6 +42,12 @@ class Style:
         self.numbering = profile.get("page_numbering", {})
         self.structure = profile.get("structure", {})
         self.labels = profile.get("labels", {})
+        self.headings = profile.get("headings", {})
+        self.footer = profile.get("footer", {})
+        self.keywords = profile.get("keywords", {})
+        self.rules = profile.get("rules", {})
+        self.rule_deltas = profile.get("rule_deltas", [])
+        self.body_rules = profile.get("body_rules", {})
 
     # -- fonts / sizes -----------------------------------------------------------
     @property
@@ -143,6 +149,68 @@ class Style:
         return (self.page.get("width_mm", 210.0)
                 - self.page.get("margin_left_mm", 25.4)
                 - self.page.get("margin_right_mm", 25.4))
+
+    # -- rules ---------------------------------------------------------------------
+    def rule_ids(self, check: str) -> list:
+        """The rule IDs a check enforces, so a report can quote them back."""
+        return list((self.rules.get("ids") or {}).get(check, []))
+
+    @property
+    def rules_authoritative(self) -> str:
+        return self.rules.get("authoritative", "")
+
+    def deltas_for(self, key: str) -> list:
+        return [d for d in self.rule_deltas if d.get("item") == key]
+
+    # -- body geometry -------------------------------------------------------------
+    @property
+    def first_line_mode(self) -> str:
+        """'indent' (w:ind firstLine), 'tab' (leading <w:tab/>) or 'either'."""
+        return self.paras.get("first_line_mode", "indent" if self.first_line_tw else "tab")
+
+    @property
+    def first_line_tab_tw(self) -> int:
+        return int(self.paras.get("first_line_tab_tw", self.first_line_tw or 567))
+
+    @property
+    def space_after_heading_tw(self) -> int:
+        return int(self.paras.get("space_after_heading_tw", self.space_after_tw))
+
+    # -- footer / keywords ---------------------------------------------------------
+    @property
+    def footer_text(self) -> str:
+        return str(self.footer.get("text", ""))
+
+    def footer_text_for(self, part_kind: str) -> str:
+        """The footer for one part of the book (the cover carries its own marking)."""
+        return str((self.footer.get("by_part") or {}).get(part_kind) or self.footer_text)
+
+    def footer_geometry(self):
+        return (int(self.footer.get("size_pt", self.size("footer", 10))),
+                self.footer.get("alignment", "left"))
+
+    def keyword_rule(self, lang: str) -> dict:
+        """The keyword line's separator and allowed count for one language."""
+        sep = self.keywords.get(f"separator_{lang}", self.keywords.get("separator_th", " "))
+        return {"label": self.keywords.get(f"label_{lang}", ""), "separator": sep,
+                "min": int(self.keywords.get("min", 4)),
+                "max": int(self.keywords.get("max", 6))}
+
+    # -- captions -------------------------------------------------------------------
+    def caption_placement(self, kind: str) -> str:
+        return (self.captions.get("placement") or {}).get(kind, "above")
+
+    def caption_alignment(self, kind: str) -> str:
+        return self.captions.get(f"{kind}_alignment", self.captions.get("alignment", "center"))
+
+    def chapter_sections(self, number) -> list:
+        return list(self.chapter_defaults(number).get("sections") or [])
+
+    def last_section_keywords(self, number) -> list:
+        return list(self.chapter_defaults(number).get("last_section_keywords") or [])
+
+    def required_section_keywords(self, number) -> list:
+        return list(self.chapter_defaults(number).get("required_keywords") or [])
 
 
 def load_profile(path: Path | None = None) -> Style:

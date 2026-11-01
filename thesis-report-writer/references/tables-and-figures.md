@@ -25,12 +25,15 @@ next paragraph
 ```
 explanatory paragraph
         ↓
-caption            ← centred, above the image
+caption            ← centred, above the image (profile: figure = "above")
         ↓
 [ the image ]
         ↓
 next paragraph
 ```
+
+When the profile says `figure: "below"`, the image comes first and the caption
+follows it. The flow is otherwise the same.
 
 While drafting a figure that does not exist yet, the caption line says so —
 `รูปที่ 2.x (แปะรูป) <what the figure shows>` in the Thai style, `Figure 2.x
@@ -38,11 +41,18 @@ While drafting a figure that does not exist yet, the caption line says so —
 
 Things that are easy to get wrong:
 
-- The caption is **above** the object, never below.
+- **Which side the caption goes on is a profile value, not a universal rule.**
+  `captions.placement` decides it per kind (`{"table": "above", "figure":
+  "below"}` is a common Thai-layout choice where the image comes first). Measure
+  the project's own documents with `scripts/derive_profile.py`; read the profile;
+  do not assume.
 - The source or reference line goes **below** a table; for a figure it goes below
   the image.
 - Rules and borders span the full content width.
 - A short caption is centred; a long caption is left-aligned.
+- Whether the caption line is **bold**, and its size relative to the body, are
+  `captions.bold` and `fonts.sizes_pt.caption`; table cell text is
+  `fonts.sizes_pt.table` and is often smaller than the body.
 
 ## Numbering
 

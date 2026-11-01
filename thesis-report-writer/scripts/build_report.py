@@ -36,7 +36,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.section import _Header
+from docx.section import _Footer, _Header
 from docx.shared import Mm, Pt
 
 from profile import DEFAULT_PROFILE, Style, load_profile
@@ -289,6 +289,28 @@ def apply_house_styles(doc, style: Style) -> None:
     normal.paragraph_format.line_spacing = 1.0
 
 
+def prune_unused_parts(doc) -> None:
+    """Drop header/footer parts no sectPr references.
+
+    The master document carries footer parts from the template it was built from.
+    They are still packaged after the build (empty), which makes a compliance
+    check read three empty footers instead of the one real one.
+    """
+    used = set()
+    for section in doc.sections:
+        sectPr = section._sectPr
+        for ref in list(sectPr.findall(qn("w:headerReference"))) + \
+                list(sectPr.findall(qn("w:footerReference"))):
+            used.add(ref.get(qn("r:id")))
+    for rel_id, rel in list(doc.part.rels.items()):
+        if rel_id in used:
+            continue
+        if "header" in rel.reltype or "footer" in rel.reltype:
+            doc.part.rels.pop(rel_id)
+            if rel.target_part in doc.part.package.parts:
+                doc.part.package.parts.remove(rel.target_part)
+
+
 def configure_page(section, style: Style) -> None:
     page = style.page
     section.page_width = Mm(page.get("width_mm", 210.0))
@@ -338,7 +360,34 @@ def fresh_header(section):
     return _Header(sectPr, section._document_part, WD_HEADER_FOOTER.PRIMARY)
 
 
-def build_header(section, style: Style, with_page_number: bool = True) -> None:
+def fresh_footer(section):
+    """The same trap as fresh_header: a section break copies the footerReference."""
+    sectPr = section._sectPr
+    for ref in sectPr.findall(qn("w:footerReference")):
+        if ref.get(qn("w:type")) == "default":
+            sectPr.remove(ref)
+    footer_part, rId = section._document_part.add_footer_part()
+    sectPr.add_footerReference(WD_HEADER_FOOTER.PRIMARY, rId)
+    return _Footer(sectPr, section._document_part, WD_HEADER_FOOTER.PRIMARY)
+
+def build_footer(section, style: Style, part_kind: str = None) -> None:
+    """The running footer: left aligned and smaller than body text."""
+    text = style.footer_text_for(part_kind) if part_kind else style.footer_text
+    if not text:
+        return
+    footer = fresh_footer(section)
+    p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    for r in list(p.runs):
+        r._element.getparent().remove(r._element)
+    p.text = ""
+    size_pt, align = style.footer_geometry()
+    set_jc(p, align)
+    set_spacing(p, style, before_tw=0, after_tw=0)
+    house_run(p.add_run(text), style, size_pt)
+
+def build_header(section, style: Style, with_page_number: bool = True,
+                 part_kind: str = None) -> None:
+    keep_only_default_refs(section)
     header = fresh_header(section)
     p = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
     for r in list(p.runs):
@@ -348,13 +397,27 @@ def build_header(section, style: Style, with_page_number: bool = True) -> None:
     set_spacing(p, style, before_tw=0, after_tw=0)
     if with_page_number:
         add_field(p, " PAGE ", "1", style)
+    build_footer(section, style, part_kind)
 
 
-def clear_header(section) -> None:
+def keep_only_default_refs(section) -> None:
+    """Even/odd and first-page headers inherit the template's empty parts, which
+    would make the package carry footers nothing ever fills."""
+    sectPr = section._sectPr
+    for tag in ("w:headerReference", "w:footerReference"):
+        for ref in sectPr.findall(qn(tag)):
+            if ref.get(qn("w:type")) != "default":
+                sectPr.remove(ref)
+
+
+def clear_header(section, style: Style = None, part_kind: str = None) -> None:
+    keep_only_default_refs(section)
     header = fresh_header(section)
     for p in header.paragraphs:
         for r in list(p.runs):
             r._element.getparent().remove(r._element)
+    if style is not None:
+        build_footer(section, style, part_kind)
 
 
 # --------------------------------------------------------------------------------------
@@ -373,10 +436,18 @@ def para(doc, style: Style, text: str = "", *, size=None, bold=False, italic=Fal
                 else after)
     if first_line is None:
         first_line = style.first_line_tw > 0
-    if first_line:
+    # Two spellings of the same first-line indent: an explicit w:ind, or a leading
+    # tab that lands on the tab stop (common in documents Word saved itself).
+    use_tab = first_line and style.first_line_mode == "tab"
+    if first_line and not use_tab:
         set_ind_first_line(p, style.first_line_tw)
-    if text:
-        house_run(p.add_run(text), style, size, bold, italic)
+    if use_tab or text:
+        run = p.add_run()
+        house_run(run, style, size, bold, italic)
+        if use_tab:
+            run.add_tab()
+        if text:
+            run.add_text(text)
     return p
 
 
@@ -395,17 +466,44 @@ def heading(doc, style: Style, level: int, text: str, *, size=None, jc="left",
     return p
 
 
+def heading_numbered(doc, style: Style, block: dict) -> None:
+    """'3.1' and its title as separate runs, joined by the separator the profile names."""
+    level = 2 if block.get("kind") == "h2" else 3
+    p = doc.add_paragraph()
+    try:
+        p.style = doc.styles[f"Heading {level}"]
+    except KeyError:
+        pass
+    set_jc(p, "left")
+    before = style.headings.get(f"h{level}_before_tw", 240)
+    after = style.headings.get(f"h{level}_after_tw", style.space_after_tw)
+    set_spacing(p, style, before_tw=before, after_tw=after)
+    size = style.size("h2" if level == 2 else "h3")
+    number = str(block.get("number", "")).strip()
+    title = str(block.get("text", "")).strip()
+    sep = style.headings.get("separator_between_number_and_title", " ").lower()
+    if number and sep == "tab":
+        house_run(p.add_run(number), style, size, True)
+        run = p.add_run("")
+        house_run(run, style, size, True)
+        run.add_tab()
+        house_run(p.add_run(title), style, size, True)
+    else:
+        house_run(p.add_run(f"{number} {title}".strip()), style, size, True)
+
+
 def page_break(doc, style: Style) -> None:
     p = doc.add_paragraph()
     set_spacing(p, style, before_tw=0, after_tw=0)
     house_run(p.add_run(), style).add_break(WD_BREAK.PAGE)
 
 
-def caption(doc, style: Style, text: str, *, before: int, after: int):
+def caption(doc, style: Style, text: str, *, before: int, after: int, kind: str = "table"):
     p = doc.add_paragraph()
-    set_jc(p, style.captions.get("alignment", "center"))
+    set_jc(p, style.caption_alignment(kind))
     set_spacing(p, style, before_tw=before, after_tw=after)
-    house_run(p.add_run(text), style, style.size("caption"))
+    house_run(p.add_run(text), style, style.size("caption"),
+              bold=bool(style.captions.get("bold")))
     return p
 
 
@@ -460,7 +558,7 @@ def add_table(doc, style: Style, spec: dict):
     return table
 
 
-def add_figure(doc, style: Style, spec: dict, base_dir: Path):
+def add_figure(doc, style: Style, spec: dict, base_dir: Path, *, indent_tw: int = 720):
     image = spec.get("image")
     if not image:
         return
@@ -472,8 +570,9 @@ def add_figure(doc, style: Style, spec: dict, base_dir: Path):
     width = min(float(spec.get("width_cm", 0)) or style.content_width_mm() / 10.0,
                 style.content_width_mm() / 10.0)
     p = doc.add_paragraph()
-    set_jc(p, style.captions.get("alignment", "center"))
-    set_spacing(p, style, before_tw=0, after_tw=style.space_after_tw)
+    set_jc(p, style.caption_alignment("figure"))
+    set_spacing(p, style, before_tw=style.captions.get("figure_image_before_tw", 120),
+                after_tw=style.captions.get("figure_image_after_tw", 120))
     p.add_run().add_picture(str(path), width=Mm(width * 10))
 
 
@@ -666,12 +765,8 @@ def front_heading(doc, style: Style, text: str) -> None:
 def render_blocks(doc, style: Style, blocks, base_dir: Path, lang: str) -> None:
     for block in blocks or []:
         kind = block.get("kind")
-        if kind == "h2":
-            heading(doc, style, 2, f"{block.get('number', '')} {block.get('text', '')}".strip(),
-                    size=style.size("h2"), jc="left", before=240, after=style.space_after_tw)
-        elif kind == "h3":
-            heading(doc, style, 3, f"{block.get('number', '')} {block.get('text', '')}".strip(),
-                    size=style.size("h3"), jc="left", before=240, after=style.space_after_tw)
+        if kind in ("h2", "h3"):
+            heading_numbered(doc, style, block)
         elif kind == "p":
             para(doc, style, block.get("text", ""), before=None,
                  after=style.space_after_tw)
@@ -686,7 +781,7 @@ def render_blocks(doc, style: Style, blocks, base_dir: Path, lang: str) -> None:
             text = block.get("caption") or style.caption_text(
                 "table", block.get("number", ""), block.get("text", ""), lang)
             caption(doc, style, text, before=style.captions.get("table_before_tw", 240),
-                    after=style.captions.get("table_after_tw", 120))
+                    after=style.captions.get("table_after_tw", 120), kind="table")
             add_table(doc, style, block)
             source = block.get("source")
             if source:
@@ -695,9 +790,15 @@ def render_blocks(doc, style: Style, blocks, base_dir: Path, lang: str) -> None:
         elif kind == "figure":
             text = block.get("caption") or style.caption_text(
                 "figure", block.get("number", ""), block.get("text", ""), lang)
-            caption(doc, style, text, before=style.captions.get("figure_before_tw", 120),
-                    after=style.captions.get("figure_after_tw", 240))
-            add_figure(doc, style, block, base_dir)
+            above = style.caption_placement("figure") == "above"
+            before = style.captions.get("figure_before_tw", 120)
+            after = style.captions.get("figure_after_tw", 240)
+            if above:
+                caption(doc, style, text, before=before, after=after, kind="figure")
+                add_figure(doc, style, block, base_dir)
+            else:
+                add_figure(doc, style, block, base_dir)
+                caption(doc, style, text, before=before, after=after, kind="figure")
             source = block.get("source")
             if source:
                 source_note(doc, style, source if source.startswith("(")
@@ -840,7 +941,7 @@ def build(spec: dict, out_path: Path, style: Style, master: Path | None) -> None
     if mode == "full":
         cover_section = doc.sections[0]
         configure_page(cover_section, style)
-        clear_header(cover_section)
+        clear_header(cover_section, style, "cover")
         build_front_matter_unnumbered(doc, style, book, lang)
 
         front_section = doc.add_section(WD_SECTION.NEW_PAGE)
@@ -868,6 +969,7 @@ def build(spec: dict, out_path: Path, style: Style, master: Path | None) -> None
             if part.get("kind") in ("chapter", "appendix"):
                 build_chapter(doc, style, part, base_dir, lang)
 
+    prune_unused_parts(doc)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(out_path))
     print(f"wrote {out_path}")

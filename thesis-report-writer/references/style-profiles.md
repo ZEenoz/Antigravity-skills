@@ -10,6 +10,7 @@ the profile, not the scripts.
 | Source | How |
 |---|---|
 | A written rules file | Read the values out of it and write the profile by hand. The rules file stays the authority; the profile is its machine-readable shadow. |
+| Existing documents from the project | `python scripts/derive_profile.py -o house_style.json docs/thesis/*.docx` — the majority value across every part (see `references/book-style.md`) |
 | A template or an existing report | `python scripts/inspect_docx.py template.docx -o house_style.json --inherit-structure` |
 | Nothing | Use `assets/default_profile.json` (the Thai KMITL Faculty of Science co-op style) and say so in your report. |
 
@@ -104,6 +105,104 @@ nobody intended).
 - **Sizes are in points.** OOXML stores half-points (`w:sz="32"` = 16 pt); the
   scripts convert.
 
+### The provenance block: `policy`, `rules`, `rule_deltas`
+
+When a project has both a written rules file and existing documents, the profile
+must say **which wins** and **where they disagree**. Without that, a stale rules
+file silently overrules the book the user actually has.
+
+```jsonc
+"policy": "An explicit value in the delivered files wins; an omitted value falls
+           back to the written rules.",
+"rules": {
+  "authoritative": "RULES_thai_report.md",
+  "working_copy": "Docs_rules.md",
+  "ids": {
+    "page-setup":    ["R-01", "R-02", "P-01"],     // check id -> rule IDs
+    "heading-sizes": ["R-06", "R-07", "P-07", "P-08"],
+    "footer":        ["P-03"]
+  }
+},
+"rule_deltas": [
+  { "rule": "R-15", "item": "paragraphs.first_line_tw",
+    "stated": "0.5 in via w:ind w:firstLine=\"720\"",
+    "in_book": "a leading <w:tab/> to the 567-twip stop",
+    "evidence": "37/39 body paragraphs in chapter 1",
+    "decision": "mode \"either\" accepts both" }
+]
+```
+
+- **`rules.ids`** makes the gate quote rule IDs: every `[PASS]`/`[FAIL]` line ends
+  with the IDs that check enforces, so the user can act on "R-12" without
+  re-reading the guide. `RULES_thai_report.md` already numbers its rules; other
+  houses usually number theirs too.
+- **`rule_deltas`** is printed as one `rule-deltas` warning per row, and the row
+  survives every future run. It is the honest record of "the document is like
+  this, the rule says that, we chose this".
+
+### Extended keys (optional — absent means the older behaviour)
+
+```jsonc
+"paragraphs": {
+  "first_line_mode": "either",        // "indent" (w:ind) | "tab" (leading <w:tab/>) | "either"
+  "first_line_tab_tw": 567,           // tab stop the leading tab lands on
+  "space_after_heading_tw": 120       // headings/captions space after, when body uses 0
+},
+
+"headings": {
+  "label_before_tw": 0, "label_after_tw": 120,
+  "title_before_tw": 0, "title_after_tw": 240,
+  "h2_before_tw": 240, "h2_after_tw": 120,
+  "h3_before_tw": 120, "h3_after_tw": 120,
+  "separator_between_number_and_title": "tab"   // "tab" | "space"
+},
+
+"captions": {
+  "placement": { "table": "above", "figure": "below" },
+  "table_alignment": "center", "figure_alignment": "center",
+  "bold": true,
+  "appendix_prefix": "ผ."            // appendix objects: ตารางที่ ผ.1
+},
+
+"footer": {
+  "text": "CONFIDENTIAL",                 // running footer text, or "" for none
+  "size_pt": 10,
+  "alignment": "left",
+  "by_part": { "cover": "DRAFT" }         // optional per-part override
+},
+
+"keywords": {
+  "label_th": "คำสำคัญ :", "label_en": "Keywords :",
+  "separator_th": " ",  "separator_en": ", ",
+  "min": 4, "max": 6
+},
+
+"structure": {
+  "chapters": [
+    { "number": 1, "file": "Chapter_01_Introduction.docx",
+      "title": { "th": "บทนำ" },
+      "sections": [ { "number": "1.1", "title": "…" } ],
+      "required_keywords": ["วัตถุประสงค์", "ขอบเขต"],
+      "last_section_keywords": ["งานวิจัย"] }
+  ]
+}
+```
+
+| Key | What it changes |
+|---|---|
+| `paragraphs.first_line_mode` | Both `w:ind w:firstLine` and a leading `<w:tab/>` are indentations in Word; real documents use either. `"tab"` also makes the **builder** emit the tab instead of the indent. |
+| `headings.separator_between_number_and_title` | The book writes `3.1` ⇥ `title`, which extracts as `3.1title`. The gate checks the run structure rather than the extracted text. |
+| `captions.placement` | Which side of the object the caption sits on. Houses differ — some captions sit above the object, others below the image. Measure it (`derive_profile.py`) instead of assuming. |
+| `captions.appendix_prefix` | Appendix objects are numbered separately (`ตารางที่ ผ.1`), so the caption regex must accept that prefix. |
+| `captions.bold` | Whether the caption line is bold. |
+| `footer.*` | A running footer outside the page number (a confidentiality marking, the faculty name), with an optional per-part override. |
+| `keywords.*` | The label, separator and count (R-31/R-32 mandate 4–6, one space in Thai). |
+| `structure.chapters[].sections` | The delivered skeleton. A chapter that omits one is a **warning**, not a failure — houses allow a chapter to reshuffle its sections (R-39a, §13.6), but the user should confirm. |
+| `structure.chapters[].last_section_keywords` | A hard rule: the last section of chapter 2 is the related-work section (R-40). |
+| `structure.chapters[].required_keywords` | Sections a chapter must carry, matched by keyword so the wording can change. |
+| `structure.chapters[].file` | The file each chapter lives in, for the folder inventory. |
+
+
 ### Part kinds
 
 `front` entries are rendered in order. The kinds the builder knows:
@@ -171,4 +270,6 @@ rules `R-01`…`R-64` with the format profile `P-01`…`P-14`:
   chapters 1–5 → references → appendices → author biography
 
 Use it as the starting point for a Thai report with no style of its own, and as a
-worked example of how a profile expresses a house style.
+worked example of how a profile expresses a house style. It is **one** style, not
+the standard: when a project has its own documents, derive a profile from them.
+

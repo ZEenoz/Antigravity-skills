@@ -38,6 +38,8 @@ Collection of skills for Antigravity, Claude Code, Cursor, Codex, and other AI c
 - **`superpowers-ponytail`**: Disciplined process combined with minimalist, lazy execution.
 - **`stress-tested-architecture`**: Architecture design coupled with adversarial grilling.
 - **`precision-diagnostics`**: Multi-phase root-cause diagnosis.
+- **`continuous-learning` / `continuous-learning-v2`**: Autonomous observation, pattern learning, and continuous improvement protocol.
+- **`task-observer`**: Autonomous task observation and workflow reflection.
 
 ### Efficiency & Formatting
 - **`caveman` / `caveman-th` / `caveman-coding` / `caveman-plan`**: Token-efficient ultra-terse response and execution modes.
@@ -54,3 +56,5 @@ Collection of skills for Antigravity, Claude Code, Cursor, Codex, and other AI c
 - **`pptx-generator` / `elite-powerpoint-designer`**: PowerPoint generation and formatting.
 - **`office-mcp`**: Microsoft Office MCP tools integration.
 - **`omp-add-provider`**: Oh My Pi model provider configuration.
+- **`thesis-report-writer`**: Thesis and co-op technical report generator, profile extractor, and compliance checker.
+- **`archify`**: Visual architecture documentation, sequence diagrams, and systems mapping.

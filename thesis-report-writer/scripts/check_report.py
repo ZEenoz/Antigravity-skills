@@ -33,9 +33,10 @@ W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
 class Result:
-    def __init__(self, rule_id: str, title: str):
+    def __init__(self, rule_id: str, title: str, rules=None):
         self.rule_id = rule_id
         self.title = title
+        self.rules = list(rules or [])
         self.status = "PASS"
         self.messages: list[str] = []
         self.checked = 0
@@ -54,8 +55,9 @@ class Result:
         self.messages.append(msg)
 
     def as_dict(self) -> dict:
-        return {"rule_id": self.rule_id, "title": self.title, "status": self.status,
-                "checked": self.checked, "messages": self.messages}
+        return {"rule_id": self.rule_id, "rules": self.rules, "title": self.title,
+                "status": self.status, "checked": self.checked,
+                "messages": self.messages}
 
 
 def _val(el, name, default=None):
@@ -63,6 +65,9 @@ def _val(el, name, default=None):
         return default
     return el.get(W + name, default)
 
+def _res(style: Style, check: str, rule_id: str, title: str) -> Result:
+    """A Result that carries the house-style rule IDs the check enforces."""
+    return Result(rule_id, title, style.rule_ids(check))
 
 def _text_of(el) -> str:
     return "".join(t.text or "" for t in el.iter(W + "t"))
@@ -118,6 +123,29 @@ class Report:
             return None
         return _val(rPr.find(W + "sz"), "val")
 
+    def in_table(self, p) -> bool:
+        node = p.getparent()
+        while node is not None:
+            if node.tag == W + "tbl":
+                return True
+            if node.tag == W + "body":
+                return False
+            node = node.getparent()
+        return False
+
+    def leading_tab(self, p) -> bool:
+        """True when the paragraph opens with a tab, the second way of spelling a
+        first-line indent (Word writes <w:tab/> as its own run)."""
+        for run in p.findall(W + "r"):
+            for child in run:
+                if child.tag == W + "t":
+                    return False
+                if child.tag == W + "tab":
+                    return True
+            if run.find(W + "rPr") is None and len(run) == 0:
+                continue
+        return False
+
     def body_start_index(self, chapter_re) -> int:
         """Index of the first body paragraph in the body's direct children.
 
@@ -149,12 +177,13 @@ class Report:
         return None
 
 
-def caption_regex(style: Style, kind: str):
+def caption_regex(style: Style, kind: str, appendix: bool = False):
     labels = [style.captions.get(f"{kind}_label"), style.captions.get(f"{kind}_label_en")]
     labels = [re.escape(l) for l in labels if l]
     if not labels:
         return None
-    return re.compile(r"^\s*(?:" + "|".join(labels) + r")\s+(\d+)\.(\d+)\b")
+    number = r"(ผ|ผ\.|\d+)\.(\d+)" if appendix else r"(\d+)\.(\d+)"
+    return re.compile(r"^\s*(?:" + "|".join(labels) + r")\s+" + number + r"\b")
 
 
 def chapter_label_regex(style: Style):
@@ -168,7 +197,7 @@ def chapter_label_regex(style: Style):
 
 # --------------------------------------------------------------------------------------
 def check_page(r: Report, style: Style) -> Result:
-    res = Result("page-setup", "Paper size and margins")
+    res = _res(style, "page-setup", "page-setup", "Paper size and margins")
     # Tolerate the rounding that comes from writing a rule in centimetres and
     # converting it to twips: 2.5 cm and 2.54 cm are the same instruction.
     margin_tol = mm_to_tw(1.0)
@@ -202,7 +231,7 @@ def check_page(r: Report, style: Style) -> Result:
 
 
 def check_fonts(r: Report, style: Style) -> Result:
-    res = Result("fonts", f"Only the profile fonts are used ({', '.join(style.allowed_fonts)})")
+    res = _res(style, "fonts", "fonts", f"Only the profile fonts are used ({', '.join(style.allowed_fonts)})")
     allowed = set(style.allowed_fonts)
     docDefaults = r.styles.find(W + "docDefaults")
     rPr = docDefaults.find(W + "rPrDefault") if docDefaults is not None else None
@@ -231,10 +260,11 @@ def check_fonts(r: Report, style: Style) -> Result:
 
 def check_run_hints(r: Report, style: Style) -> Result:
     if not style.hint_cs:
-        res = Result("script-hint", "Script hint on every run (not required by this style)")
+        res = _res(style, "script-hint", "script-hint",
+                "Script hint on every run (not required by this style)")
         res.na("this style does not use a complex script")
         return res
-    res = Result("script-hint", "Every text run carries w:hint=\"cs\"")
+    res = _res(style, "script-hint", "script-hint", "Every text run carries w:hint=\"cs\"")
     offenders = []
     total = 0
     for p in r.paragraphs:
@@ -255,7 +285,7 @@ def check_run_hints(r: Report, style: Style) -> Result:
 
 
 def check_alignment(r: Report, style: Style) -> Result:
-    res = Result("alignment", f"Body alignment is {style.alignment}")
+    res = _res(style, "alignment", "alignment", f"Body alignment is {style.alignment}")
     forbidden = style.forbidden_alignment
     bad = Counter()
     used = 0
@@ -278,22 +308,31 @@ def check_alignment(r: Report, style: Style) -> Result:
 
 
 def check_body_metrics(r: Report, style: Style) -> Result:
-    res = Result("paragraph-metrics", "First-line indent and space after match the profile")
+    res = _res(style, "paragraph-metrics", "paragraph-metrics",
+                "First line indent (or leading tab) and space after match the profile")
     want_first = style.first_line_tw
     want_after = style.space_after_tw
+    mode = style.first_line_mode
     offenders_indent, offenders_spacing = [], []
     total = 0
     for p in r.paragraphs:
         if r.pjc(p) != style.alignment or not _text_of(p).strip():
+            continue
+        if (r.pstyle(p) or "").lower().startswith("heading") or r.in_table(p):
             continue
         total += 1
         ind = r.pind(p)
         first = _val(ind, "firstLine")
         hanging = _val(ind, "hanging")
         left = _val(ind, "left")
-        if want_first:
-            is_list = hanging is not None and _close(int(left or 0), style.list_left_tw)
-            if not (_close(int(first or 0), want_first) or is_list):
+        if want_first and mode != "tab":
+            is_list = (hanging is not None and _close(int(left or 0), style.list_left_tw)) \
+                or (r.pstyle(p) or "").startswith("List")
+            indented = _close(int(first or 0), want_first) or is_list
+            # a leading tab is the other way the same indent is spelled
+            if mode == "either" and not indented:
+                indented = r.leading_tab(p)
+            if not indented:
                 offenders_indent.append(_text_of(p)[:40])
         if want_after:
             sp = r.pspacing(p)
@@ -312,13 +351,16 @@ def check_body_metrics(r: Report, style: Style) -> Result:
 
 
 def check_list_indent(r: Report, style: Style) -> Result:
-    res = Result("list-indent", "Numbered items use the profile hanging indent")
+    res = _res(style, "list-indent", "list-indent",
+                "Numbered items use the profile hanging indent")
     if not style.list_left_tw:
         res.na("this style does not indent list items")
         return res
     offenders = []
     total = 0
     for p in r.paragraphs:
+        if r.in_table(p):
+            continue
         ind = r.pind(p)
         if ind is None or not _close(int(_val(ind, "left") or 0), style.list_left_tw):
             continue
@@ -335,7 +377,8 @@ def check_list_indent(r: Report, style: Style) -> Result:
 
 
 def check_heading_styles(r: Report, style: Style) -> Result:
-    res = Result("heading-styles", "Real Heading styles carry outline levels")
+    res = _res(style, "heading-styles", "heading-styles",
+                "Real Heading styles carry outline levels")
     for style_id, level in (("Heading1", "0"), ("Heading2", "1"), ("Heading3", "2")):
         found = False
         for st in r.styles.iter(W + "style"):
@@ -352,24 +395,40 @@ def check_heading_styles(r: Report, style: Style) -> Result:
 
 
 def check_heading_sizes(r: Report, style: Style) -> Result:
-    res = Result("heading-sizes", "Heading sizes match the profile")
+    res = _res(style, "heading-sizes", "heading-sizes", "Heading sizes match the profile")
     want_h1 = str(style.size("chapter_label") * 2)
     want_h2 = str(style.size("h2") * 2)
     want_h3 = str(style.size("h3") * 2)
     h1 = r.style_size("Heading1")
     h2 = r.style_size("Heading2")
     h3 = r.style_size("Heading3")
+    chapter_re = chapter_label_regex(style)
+    heads = [p for p in r.paragraphs if r.pstyle(p) == "Heading1"]
+    labels = [p for p in heads if chapter_re.match(_text_of(p).strip())]
+
+    want_front = str(style.size("front_heading") * 2)
+    if not labels:
+        # A front-matter sheet (abstract, acknowledgements, contents): the heading
+        # is the front-matter heading, not a chapter label.
+        res.checked = len(heads)
+        for p in heads:
+            sizes = {r.run_size(run) for run in r.runs(p)
+                     if run.find(W + "t") is not None and r.run_size(run)}
+            if sizes and sizes != {want_front}:
+                res.fail(f"front-matter heading {_text_of(p).strip()[:30]!r} uses "
+                         f"{sorted(sizes)} half-points, expected {want_front} (R-09)")
+        if not heads:
+            res.na("no Heading 1 paragraph in this document")
+        return res
+
     res.checked = 3
     if h1 != want_h1:
-        res.fail(f"Heading1 style size is {h1} half-points, expected {want_h1}")
+        res.fail(f"Heading1 style size is {h1} half-points, expected {want_h1} "
+                 f"(the style is what a re-typed heading inherits)")
     if h2 != want_h2:
         res.fail(f"Heading2 style size is {h2} half-points, expected {want_h2}")
     if h3 is not None and h3 != want_h3:
         res.fail(f"Heading3 style size is {h3} half-points, expected {want_h3}")
-
-    chapter_re = chapter_label_regex(style)
-    heads = [p for p in r.paragraphs if r.pstyle(p) == "Heading1"]
-    labels = [p for p in heads if chapter_re.match(_text_of(p).strip())]
     titles = []
     for idx, p in enumerate(heads):
         if idx + 1 < len(heads) and heads[idx] in labels:
@@ -405,21 +464,106 @@ def check_heading_sizes(r: Report, style: Style) -> Result:
     return res
 
 
+def check_heading_separator(r: Report, style: Style) -> Result:
+    """'3.1' and its title are separated by a tab (the book) or a space."""
+    want = style.headings.get("separator_between_number_and_title", " ").strip().lower()
+    res = _res(style, "heading-separator", "heading-separator",
+                f"Number and title in a section heading are separated by a {want}")
+    offenders = []
+    total = 0
+    for p in r.paragraphs:
+        if r.pstyle(p) not in ("Heading2", "Heading3"):
+            continue
+        runs = [run for run in p.findall(W + "r")
+                if run.find(W + "t") is not None or run.find(W + "tab") is not None]
+        if not runs:
+            continue
+        first = _text_of(runs[0]).strip()
+        if not re.match(r"^\d+(\.\d+)+$", first):
+            continue
+        total += 1
+        # The tab may be in a run of its own, so scan forward until the title text.
+        has_tab = False
+        for run in runs[1:]:
+            if run.find(W + "tab") is not None:
+                has_tab = True
+                break
+            if run.find(W + "t") is not None:
+                break
+        if want == "tab" and not has_tab:
+            offenders.append(_text_of(p)[:40])
+        elif want == "space" and has_tab:
+            offenders.append(_text_of(p)[:40])
+    res.checked = total
+    if offenders:
+        res.fail(f"{len(offenders)} section heading(s) do not separate the number and "
+                 f"the title with a {want}, e.g. {offenders[:3]}")
+    if total == 0:
+        res.na("no numbered section headings in this document")
+    return res
+
+
 def check_page_numbers(r: Report, style: Style) -> Result:
-    res = Result("page-numbers", "Page number centred in the header")
+    res = _res(style, "page-numbers", "page-numbers",
+                f"Page number in the header, {style.numbering.get('alignment', 'center')} aligned")
+    want_align = style.numbering.get("alignment", "center")
     if not r.headers:
         res.fail("no header part in the document")
         return res
     if "PAGE" not in r.header_xml:
         res.fail("no PAGE field in the header")
-    if 'w:val="center"' not in r.header_xml:
-        res.fail("the header page number is not centred")
+    if f'w:val="{want_align}"' not in r.header_xml:
+        got = sorted(set(re.findall(r'w:jc w:val="(\w+)"', r.header_xml)))
+        res.fail(f"the header page number is not {want_align} aligned "
+                 f"(header uses {got or 'no w:jc'})")
     res.checked = len(r.headers)
     return res
 
 
+def check_footer(r: Report, style: Style) -> Result:
+    res = _res(style, "footer", "footer", f"Every page carries the footer '{style.footer_text}'")
+    # A cover file may legitimately carry its own marking; accept
+    # any footer the profile lists for a part, and require the default on the rest.
+    texts_ok = [style.footer_text] + [str(v) for v in (style.footer.get("by_part") or {}).values() if v]
+    want = style.footer_text
+    if not want:
+        res.na("this style has no running footer")
+        return res
+    footers = [n for n in r.names if re.match(r"word/footer\d*\.xml$", n)]
+    if not footers:
+        res.fail("no footer part in the document")
+        return res
+    res.checked = len(footers)
+    texts = {}
+    for name in footers:
+        xml = r.zf.read(name).decode("utf-8", "replace")
+        root = etree.fromstring(xml.encode("utf-8"))
+        body = "\n".join(_text_of(p).strip() for p in root.iter(W + "p"))
+        texts[name] = body
+    missing = [n for n, body in texts.items()
+               if not any(t in body for t in texts_ok)]
+    if missing:
+        res.fail(f"{len(missing)} footer part(s) without '{want}': {sorted(missing)[:3]}")
+    size_pt, align = style.footer_geometry()
+    wrong = []
+    for name in footers:
+        root = etree.fromstring(r.zf.read(name))
+        for p in root.iter(W + "p"):
+            if want not in _text_of(p):
+                continue
+            for run in p.findall(W + "r"):
+                sz = r.run_size(run)
+                if sz and sz != str(size_pt * 2):
+                    wrong.append(f"{name}: {sz} half-points")
+                    break
+    if wrong:
+        res.warn(f"footer text is not {size_pt} pt in {sorted(set(wrong))[:3]}")
+    return res
+
+
 def check_numbering_formats(r: Report, style: Style, mode: str) -> Result:
-    res = Result("page-number-formats", "Front matter and body use the profile formats")
+    res = _res(style, "page-number-formats", "page-number-formats",
+                "Front matter and body use the profile formats")
     fmts = [_val(n, "fmt") for n in r.body.iter(W + "pgNumType")]
     res.checked = len(fmts)
     want_front = style.numbering.get("front_format")
@@ -429,13 +573,16 @@ def check_numbering_formats(r: Report, style: Style, mode: str) -> Result:
         return res
     if mode == "full" and want_front and want_front not in fmts:
         res.warn(f"no '{want_front}' page numbering found for the front matter")
-    if want_body and want_body not in fmts:
+    has_chapter = any(chapter_label_regex(style).match(_text_of(p).strip())
+                      for p in r.paragraphs)
+    if want_body and want_body not in fmts and has_chapter:
         res.warn(f"no '{want_body}' page numbering found for the body")
     return res
 
 
 def check_toc(r: Report, style: Style, mode: str) -> Result:
-    res = Result("contents-field", "The contents page is a real TOC field")
+    res = _res(style, "contents-field", "contents-field",
+                "The contents page is a real TOC field")
     if mode != "full":
         res.na("the contents page belongs to the assembled book, not to a chapter file")
         return res
@@ -447,10 +594,11 @@ def check_toc(r: Report, style: Style, mode: str) -> Result:
 
 
 def check_caption_lists(r: Report, style: Style, mode: str) -> Result:
-    res = Result("caption-lists", "Every table and figure is listed in the lists")
+    res = _res(style, "caption-lists", "caption-lists",
+                "Every table and figure is listed in the lists")
     instr = "".join(t.text or "" for t in r.doc.iter(W + "instrText"))
-    table_re = caption_regex(style, "table")
-    figure_re = caption_regex(style, "figure")
+    table_re = caption_regex(style, "table", appendix=True)
+    figure_re = caption_regex(style, "figure", appendix=True)
     chapter_re = chapter_label_regex(style)
     body_paras = r.body_paragraphs(chapter_re)
     tables = [p for p in body_paras if table_re and table_re.match(_text_of(p))]
@@ -472,57 +620,53 @@ def check_caption_lists(r: Report, style: Style, mode: str) -> Result:
 
 
 def check_caption_placement(r: Report, style: Style) -> Result:
-    res = Result("caption-placement", "Captions sit above the object they label")
+    res = _res(style, "caption-placement", "caption-placement",
+                "Captions sit where the profile puts them relative to the object")
     children = list(r.body)
-    table_re = caption_regex(style, "table")
-    figure_re = caption_regex(style, "figure")
+    table_re = caption_regex(style, "table", appendix=True)
+    figure_re = caption_regex(style, "figure", appendix=True)
     chapter_re = chapter_label_regex(style)
     body_start = r.body_start_index(chapter_re)
+    table_want = style.caption_placement("table")
     offenders = []
     total = 0
     for idx, el in enumerate(children):
         if el.tag == W + "tbl" and idx >= body_start:
-            prev = None
-            for j in range(idx - 1, -1, -1):
+            span = (range(idx - 1, -1, -1) if table_want == "above"
+                    else range(idx + 1, min(idx + 4, len(children))))
+            neighbour = None
+            for j in span:
                 if children[j].tag == W + "p" and _text_of(children[j]).strip():
-                    prev = children[j]
+                    neighbour = children[j]
                     break
             total += 1
-            if prev is None or not (table_re and table_re.match(_text_of(prev))):
-                offenders.append("body table without a caption directly above it")
+            if neighbour is None or not (table_re and table_re.match(_text_of(neighbour))):
+                offenders.append(f"body table without a caption directly {table_want} it")
         elif el.tag == W + "p" and figure_re and figure_re.match(_text_of(el)):
             total += 1
-            found = False
-            # Check following paragraphs (caption above)
-            for j in range(idx + 1, min(idx + 4, len(children))):
-                candidate = children[j]
-                if candidate.tag == W + "tbl":
-                    found = candidate.find(".//" + W + "drawing") is not None or \
-                        candidate.find(".//" + W + "pict") is not None
-                elif candidate.tag == W + "p":
+            want = style.caption_placement("figure")
+
+            def image_within(step):
+                """Walk away from the caption until an image or a real paragraph."""
+                j = idx + step
+                while 0 <= j < len(children) and abs(j - idx) <= 3:
+                    candidate = children[j]
                     if candidate.find(".//" + W + "drawing") is not None or \
                             candidate.find(".//" + W + "pict") is not None:
-                        found = True
-                    elif _text_of(candidate).strip():
-                        break
-                if found:
-                    break
-            # Check preceding paragraphs (caption below: [รูปภาพ] then รูปที่ X.Y)
-            if not found:
-                for j in range(idx - 1, max(-1, idx - 4), -1):
-                    candidate = children[j]
-                    if candidate.tag == W + "tbl":
-                        found = candidate.find(".//" + W + "drawing") is not None or \
-                            candidate.find(".//" + W + "pict") is not None
-                    elif candidate.tag == W + "p":
-                        if candidate.find(".//" + W + "drawing") is not None or \
-                                candidate.find(".//" + W + "pict") is not None:
-                            found = True
-                        elif _text_of(candidate).strip():
-                            break
-                    if found:
-                        break
-            if not found:
+                        return True
+                    if candidate.tag == W + "p" and _text_of(candidate).strip():
+                        return False
+                    j += step
+                return False
+
+            seen_above = image_within(+1)
+            seen_below = image_within(-1)
+            found = seen_above if want == "above" else seen_below
+            if not found and (seen_above or seen_below):
+                offenders.append(f"figure caption sits "
+                                 f"{'below' if seen_below else 'above'} while the profile "
+                                 f"puts it {want} the image")
+            elif not found:
                 offenders.append("figure caption not adjacent to an image")
     res.checked = total
     if offenders:
@@ -533,10 +677,12 @@ def check_caption_placement(r: Report, style: Style) -> Result:
 
 
 def check_caption_numbering(r: Report, style: Style) -> Result:
-    res = Result("caption-numbering", "Captions are numbered chapter.sequence and never reused")
-    table_re = caption_regex(style, "table")
-    figure_re = caption_regex(style, "figure")
+    res = _res(style, "caption-numbering", "caption-numbering",
+                "Captions are numbered chapter.sequence, in order, and never reused")
+    table_re = caption_regex(style, "table", appendix=True)
+    figure_re = caption_regex(style, "figure", appendix=True)
     seen = {}
+    order = []
     total = 0
     chapter_re = chapter_label_regex(style)
     for p in r.body_paragraphs(chapter_re):
@@ -546,11 +692,40 @@ def check_caption_numbering(r: Report, style: Style) -> Result:
                 continue
             m = regex.match(text)
             if m:
-                key = f"{kind} {m.group(1)}.{m.group(2)}"
+                chapter, seq = m.group(1), int(m.group(2))
+                key = f"{kind} {chapter}.{seq}"
                 seen[key] = seen.get(key, 0) + 1
                 total += 1
+                # A table that spills onto the next page repeats its caption with
+                # " (ต่อ)" - that is not a second object and not a reused number.
+                continuation = "ต่อ)" in text or "(cont" in text.lower()
+                if chapter.isdigit() and not continuation:
+                    order.append((kind, int(chapter), seq))
                 break
-    offenders = [f"{k} used {v} times" for k, v in seen.items() if v > 1]
+    offenders = []
+    # A caption repeated verbatim is a continuation ("(ต่อ)" pages repeat it with
+    # that marker, so only exact repeats count as a duplicate number).
+    plain = {}
+    for p in r.body_paragraphs(chapter_re):
+        text = _text_of(p).strip()
+        if "ต่อ)" in text:
+            continue
+        for kind, regex in (("table", table_re), ("figure", figure_re)):
+            if regex and regex.match(text):
+                key = f"{kind} {regex.match(text).group(1)}.{regex.match(text).group(2)}"
+                plain[key] = plain.get(key, 0) + 1
+                break
+    offenders = [f"{k} used {v} times" for k, v in plain.items() if v > 1]
+    # R-47/R-50: numbers run 1..n inside each chapter, in document order.
+    for kind in ("table", "figure"):
+        per_chapter = {}
+        for k, chapter, seq in order:
+            if k == kind:
+                per_chapter.setdefault(chapter, []).append(seq)
+        for chapter, seqs in per_chapter.items():
+            if seqs != list(range(1, len(seqs) + 1)):
+                offenders.append(f"chapter {chapter} {kind} numbers are {seqs}, "
+                                 f"expected 1..{len(seqs)} in order")
     res.checked = total
     if offenders:
         res.fail("; ".join(offenders))
@@ -560,7 +735,7 @@ def check_caption_numbering(r: Report, style: Style) -> Result:
 
 
 def check_table_style(r: Report, style: Style) -> Result:
-    res = Result("table-style", "Tables use the profile's border style")
+    res = _res(style, "table-style", "table-style", "Tables use the profile's border style")
     if not style.tables.get("borders", True):
         res.na("this style does not require table borders")
         return res
@@ -579,7 +754,8 @@ def check_table_style(r: Report, style: Style) -> Result:
 
 
 def check_settings(r: Report, style: Style) -> Result:
-    res = Result("settings", "settings.xml is schema-valid (applyBreakingRules inside w:compat)")
+    res = _res(style, "settings", "settings",
+                "settings.xml is schema-valid (applyBreakingRules inside w:compat)")
     res.checked = 1
     compat = r.settings.find(W + "compat")
     if compat is None:
@@ -595,7 +771,8 @@ def check_settings(r: Report, style: Style) -> Result:
 
 
 def check_structure(r: Report, style: Style, mode: str) -> Result:
-    res = Result("structure", "Every part of the book is present, in the profile's order")
+    res = _res(style, "structure", "structure",
+                "Every part of the book is present, in the profile's order")
     if mode != "full":
         res.na("chapter-scoped document")
         return res
@@ -634,6 +811,233 @@ def check_structure(r: Report, style: Style, mode: str) -> Result:
 
 
 # --------------------------------------------------------------------------------------
+def _section_texts(r: Report) -> list:
+    """(number, title) of every Heading 2 paragraph, in document order."""
+    out = []
+    for p in r.paragraphs:
+        if r.pstyle(p) != "Heading2":
+            continue
+        text = _text_of(p).strip()
+        m = re.match(r"^(\d+(?:\.\d+)*)\s*(.*)$", text)
+        if m:
+            out.append((m.group(1), m.group(2).strip()))
+        elif text:
+            out.append(("", text))
+    return out
+
+
+def check_chapter_sections(r: Report, style: Style, mode: str) -> Result:
+    res = _res(style, "chapter-sections", "chapter-sections",
+                "Each chapter carries the sections the profile prescribes")
+    sections = _section_texts(r)
+    chapters = [c for c in style.structure.get("chapters", []) if c.get("sections")]
+    if not chapters:
+        res.na("the profile prescribes no chapter sections")
+        return res
+    res.checked = 0
+    for chapter in chapters:
+        number = chapter.get("number")
+        want = [s.get("number") for s in chapter.get("sections") or []]
+        if mode == "chapter":
+            # A single chapter file: only judge the chapter whose sections this is.
+            if not any(text.startswith(str(number) + ".") for text, _ in sections):
+                continue
+        got = [n for n, _ in sections if n.startswith(str(number) + ".")]
+        res.checked += len(want)
+        missing = [n for n in want if n not in got]
+        if missing:
+            res.warn(f"chapter {number} does not use section(s) {missing} from the "
+                     f"delivered structure; R-39a/64 allow a chapter to reshuffle its "
+                     f"sections, so confirm the omission is intended")
+    if res.checked == 0:
+        res.na("no chapter of this document has a prescribed section list")
+    return res
+
+
+def check_last_section(r: Report, style: Style) -> Result:
+    res = _res(style, "chapter-sections", "last-section",
+                "Chapter 2 ends with the related-work section (R-40)")
+    sections = _section_texts(r)
+    rules = [(c, [k for k in c.get("last_section_keywords") or []])
+             for c in style.structure.get("chapters", [])
+             if c.get("last_section_keywords")]
+    if not rules:
+        res.na("the profile prescribes no closing section")
+        return res
+    res.checked = 0
+    for chapter, keywords in rules:
+        own = [(n, t) for n, t in sections if n.startswith(str(chapter.get("number")) + ".")]
+        if not own:
+            continue
+        res.checked += 1
+        last = own[-1][1]
+        if not any(k in last for k in keywords):
+            res.fail(f"chapter {chapter.get('number')} ends with '{last}', but the last "
+                     f"section must mention {keywords}")
+    if res.checked == 0:
+        res.na("this document does not contain the chapter that needs a closing section")
+    return res
+
+
+def check_keywords(r: Report, style: Style) -> Result:
+    res = _res(style, "keywords", "keywords", "The keywords line has 4-6 terms")
+    found = 0
+    total = 0
+    for p in r.paragraphs:
+        text = _text_of(p).strip()
+        for lang, rule in (("th", style.keyword_rule("th")), ("en", style.keyword_rule("en"))):
+            label = rule["label"]
+            if not label or not text.startswith(label):
+                continue
+            found += 1
+            body = text[len(label):].strip()
+            sep = rule["separator"]
+            terms = [t for t in (body.split(sep) if sep.strip() else body.split()) if t.strip()]
+            total += len(terms)
+            if not (rule["min"] <= len(terms) <= rule["max"]):
+                res.fail(f"{lang} keywords: {len(terms)} term(s), expected "
+                         f"{rule['min']}-{rule['max']}: {terms}")
+            if lang == "th" and sep == " " and re.search(r"\s{2,}", body):
+                res.fail("Thai keywords are separated by more than one space (R-31)")
+    res.checked = found
+    if not found:
+        res.na("no keywords line in this document")
+    return res
+
+
+def check_caption_alignment(r: Report, style: Style) -> Result:
+    res = _res(style, "caption-alignment", "caption-alignment",
+                "Captions and table text use the profile's size and alignment")
+    want_size = str(style.size("caption") * 2)
+    sizes, jcs = [], []
+    table_re = caption_regex(style, "table", appendix=True)
+    figure_re = caption_regex(style, "figure", appendix=True)
+    for p in r.paragraphs:
+        text = _text_of(p).strip()
+        kind = None
+        for k, regex in (("table", table_re), ("figure", figure_re)):
+            if regex and regex.match(text):
+                kind = k
+                break
+        if not kind:
+            continue
+        sizes.append((text[:30], r.pjc(p), style.caption_alignment(kind)))
+    res.checked = len(sizes)
+    if not sizes:
+        res.na("no captions in the document")
+        return res
+    if style.captions.get("bold"):
+        not_bold = []
+        for p in r.paragraphs:
+            text = _text_of(p).strip()
+            if not (table_re and table_re.match(text)):
+                continue
+            bold = any(run.find(W + "rPr") is not None
+                       and run.find(W + "rPr").find(W + "b") is not None
+                       for run in r.runs(p) if run.find(W + "t") is not None)
+            if not bold:
+                not_bold.append(text)
+        if not_bold:
+            res.fail(f"{len(not_bold)} table caption(s) are not bold, "
+                     f"e.g. {not_bold[0][:50]!r}")
+    run_sizes = set()
+    for p in r.paragraphs:
+        if table_re and table_re.match(_text_of(p).strip()):
+            for run in r.runs(p):
+                if r.run_size(run):
+                    run_sizes.add(r.run_size(run))
+    if run_sizes and run_sizes != {want_size}:
+        res.fail(f"table captions carry {sorted(run_sizes)} half-points, "
+                 f"expected {want_size} (P-12/P-13)")
+    return res
+
+
+def check_references(r: Report, style: Style) -> Result:
+    res = _res(style, "references", "references",
+                f"The reference list is headed '{style.label('references', 'th')}' and is numbered")
+    heading = style.label("references", "th")
+    texts = [_text_of(p).strip() for p in r.paragraphs]
+    if heading not in texts:
+        res.na(f"no '{heading}' heading in this document")
+        return res
+    idx = texts.index(heading)
+    entries = []
+    for p in r.paragraphs[idx + 1:]:
+        style_id = r.pstyle(p) or ""
+        text = _text_of(p).strip()
+        if style_id.startswith("Heading"):
+            break           # the next heading closes the reference list
+        if text:
+            entries.append(text)
+    res.checked = len(entries)
+    if not entries:
+        res.fail(f"'{heading}' is followed by no entries")
+        return res
+    unnumbered = [e for e in entries if not re.match(r"^\[\d+\]", e)]
+    if unnumbered:
+        res.warn(f"{len(unnumbered)} reference(s) without a [n] label, "
+                 f"e.g. {unnumbered[0][:60]!r}")
+    return res
+
+
+def check_appendix(r: Report, style: Style) -> Result:
+    res = _res(style, "appendix", "appendix",
+                f"Appendices are headed '{style.label('appendix', 'th')}' and numbered with "
+                f"the profile prefix")
+    prefix = style.captions.get("appendix_prefix") or "ผ."
+    sep = r"\s*" if prefix.endswith(".") else r"\s*"
+    heading = style.label("appendix", "th")
+    # A table-of-contents entry also says "ภาคผนวก"; only a real heading opens one.
+    is_heading = any((r.pstyle(p) or "").startswith("Heading")
+                     and _text_of(p).strip().startswith(heading) for p in r.paragraphs)
+    if not is_heading:
+        res.na("no appendix in this document")
+        return res
+    texts = [_text_of(p).strip() for p in r.paragraphs]
+    res.checked = 1
+    numbered = [t for t in texts
+                if re.search(rf"(?:ตารางที่|รูปที่)\s*{re.escape(prefix)}{sep}\d+", t)]
+    if not numbered:
+        res.fail(f"appendix objects are not numbered '{prefix}' "
+                 f"(expected e.g. 'ตารางที่ {prefix}1')")
+    res.checked += len(numbered)
+    return res
+
+
+def check_biography(r: Report, style: Style) -> Result:
+    res = _res(style, "biography", "biography",
+                "The author biography carries the seven required fields (R-60)")
+    heading = style.label("biography", "th")
+    texts = [_text_of(p).strip() for p in r.paragraphs]
+    if heading not in texts:
+        res.na("no author biography in this document")
+        return res
+    idx = texts.index(heading)
+    body = "\n".join(texts[idx + 1:])
+    fields = ["ชื่อ", "สาขา", "เกิด", "ที่อยู่", "ประวัติการศึกษา"]
+    res.checked = len(fields)
+    missing = [f for f in fields if f not in body]
+    if missing:
+        res.warn(f"biography may be missing: {missing} (R-60 asks for name, birth date, "
+                 f"address, education, scholarship and publications)")
+    return res
+
+
+def check_rule_deltas(r: Report, style: Style) -> Result:
+    """Surface the places where the written rules and the delivered files disagree."""
+    res = Result("rule-deltas", "Known differences between the rules and this project",
+                 [style.rules_authoritative] if style.rules_authoritative else [])
+    if not style.rule_deltas:
+        res.na("this profile records no rules-vs-files differences")
+        return res
+    res.checked = len(style.rule_deltas)
+    for delta in style.rule_deltas:
+        res.warn(f"{delta.get('rule')} {delta.get('item')}: rule says "
+                 f"{delta.get('stated')}; the book has {delta.get('in_book')} "
+                 f"-> {delta.get('decision')}")
+    return res
+
+
 def run_checks(report: Report, style: Style, mode: str) -> list:
     return [
         check_page(report, style),
@@ -642,17 +1046,27 @@ def run_checks(report: Report, style: Style, mode: str) -> list:
         check_alignment(report, style),
         check_heading_styles(report, style),
         check_heading_sizes(report, style),
+        check_heading_separator(report, style),
         check_body_metrics(report, style),
         check_list_indent(report, style),
         check_page_numbers(report, style),
+        check_footer(report, style),
         check_numbering_formats(report, style, mode),
         check_toc(report, style, mode),
         check_caption_lists(report, style, mode),
         check_caption_placement(report, style),
         check_caption_numbering(report, style),
+        check_caption_alignment(report, style),
+        check_chapter_sections(report, style, mode),
+        check_last_section(report, style),
+        check_keywords(report, style),
+        check_references(report, style),
+        check_appendix(report, style),
+        check_biography(report, style),
         check_table_style(report, style),
         check_settings(report, style),
         check_structure(report, style, mode),
+        check_rule_deltas(report, style),
     ]
 
 
@@ -685,7 +1099,8 @@ def main(argv=None) -> int:
     print("=" * 78)
     for res in results:
         marker = {"PASS": "PASS", "FAIL": "FAIL", "WARN": "WARN", "NA": "  - "}[res.status]
-        print(f"[{marker}] {res.rule_id:<22} {res.title}")
+        rules = f"  [{', '.join(res.rules)}]" if res.rules else ""
+        print(f"[{marker}] {res.rule_id:<22} {res.title}{rules}")
         for msg in res.messages:
             print(f"         - {msg}")
     print("=" * 78)

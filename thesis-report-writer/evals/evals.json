@@ -18,8 +18,22 @@
     {
       "id": 2,
       "name": "full-book-skeleton",
-      "prompt": "Build me the complete thesis book skeleton for my internship report as a .docx: both covers, copyright, Thai and English abstract, certification sheet, acknowledgements, table of contents, list of tables, list of figures, abbreviations, chapters 1 to 5, references, appendix and author biography. Same house style as Docs_Rules.md at the root of C:/Users/nxg22304/Desktop/NXP_Program. Pull the project facts (title, what the program does, the five chapters' topics) from that repository, and mark anything you could not find instead of inventing it.",
+      "prompt": "Build me the complete thesis book skeleton for my internship report as a .docx: both covers, copyright, Thai and English abstract, certification sheet, acknowledgements, table of contents, list of tables, list of figures, abbreviations, chapters 1 to 5, references, appendix and author biography. Use the house style described in RULES.md in this folder. Pull the project facts (title, what the project does, the five chapters' topics) from the repository you are in, and mark anything you could not find instead of inventing it.",
       "expected_output": "A single .docx containing the whole book in the house style, with every mandated part present in order, real TOC/list fields, and placeholders rather than invented content where the facts were missing.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "derive-profile-from-existing-parts",
+      "prompt": "โปรเจกต์นี้มีรายงานที่เขียนไว้แล้วใน docs/thesis/*.docx และไฟล์กฎ docs/RULES.md ช่วยสร้าง style profile ที่อธิบายรูปแบบจริงของเล่มนี้ แล้วตรวจว่าแต่ละไฟล์ตรงกับ profile หรือไม่ พร้อมบอกว่ากฎข้อไหนที่ไฟล์ใช้ค่าอื่น",
+      "expected_output": "A house_style.json produced by scripts/derive_profile.py over every part (not one file), containing measured page geometry, fonts, heading sizes, indent mode, caption placement and footer, plus a rule_deltas list naming each disagreement with evidence; then a per-file compliance table whose lines quote the rule IDs from rules.ids.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "audit-folder-with-project-profile",
+      "prompt": "ตรวจรายงานทั้งโฟลเดอร์ (ทุก part .docx) ว่าเข้ากับเฟอร์แมตเล่มหรือไม่ แล้วสรุปเป็นตารางว่าข้อไหนไม่ผ่านพร้อม ID ของกฎ",
+      "expected_output": "Every .docx in the folder checked with the project profile and --mode chapter (Word lock files skipped), reported as one table of file / pass / fail / failing check names, plus one line per cause with its rule ID and the number of affected runs or paragraphs — and no claim of compliance while a FAIL remains.",
       "files": []
     }
   ]
