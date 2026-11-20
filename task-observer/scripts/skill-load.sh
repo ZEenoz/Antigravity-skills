@@ -5,11 +5,13 @@
 #
 # Usage:
 #   bash scripts/skill-load.sh <workspace-root> <skill-name>
+#   bash scripts/skill-load.sh <workspace-root> <skill-name> --correct "<reason>"
+#   bash scripts/skill-load.sh <workspace-root> <skill-name> --query-only
 #
 #   <workspace-root>  the pinned absolute workspace path — the directory that
 #                     holds skill-observations/. Never resolved from the cwd;
 #                     the path may contain spaces.
-#   <skill-name>      the skill whose Skill invocation rides in THIS batch, as
+#   <skill-name>      ONE skill: the one whose Skill invocation rides in THIS batch, as
 #                     the listing shows it (`plugin:name` allowed), OR the
 #                     file name of an agent definition or instructions file
 #                     a delegate is about to be briefed under (`reviewer.md`;
@@ -28,6 +30,18 @@
 # line to skill-observations/checkpoints.log:
 #   YYYY-MM-DD HH:MM loaded <skill-name> — N open observations
 #
+# --query-only: the same lookup and the same stdout, and nothing appended —
+# for a lookup no Skill call rides with (the restatement check before
+# logging, the lookup before briefing a delegate), where a `loaded` line
+# would record a load that never happened.
+#
+# --correct: the Skill call in that batch was refused or errored, so the
+# `loaded` line above it is false. Run in the NEXT call, it appends
+#   YYYY-MM-DD HH:MM NOT loaded <skill-name> — <reason>
+# runs no lookup and prints nothing. It writes the line even with no
+# `loaded` line before it (a refusal is a fact); with no
+# skill-observations/ yet it prints one NOTE line and writes nothing.
+#
 # Exit status:
 #   0  the lookup ran (N may be 0) — or no log exists yet under an existing
 #      root (a first run: the load batch precedes Session Start step 1,
@@ -38,16 +52,27 @@
 #   1  LOOKUP BROKEN — entries exist but no header parsed, or the lookup
 #      stage itself exited with an error; nothing is written to
 #      checkpoints.log, because "0 open" from a command that read nothing
-#      is the one result nobody questions
+#      is the one result nobody questions; or LOOKUP TOOLS MISSING — a
+#      command the script runs is not on PATH, named before anything runs
 #   2  refused: missing arguments, a relative root, a root that does not
-#      exist, a pre-3.0 log.md with no observation-log/ beside it, or a
-#      skill name with characters outside [A-Za-z0-9:._/-]
+#      exist (a first run when its parent exists and is writable: run
+#      Workspace creation, then re-run the lookup; otherwise a wrong pin —
+#      the caller checks the parent, the message names both), a pre-3.0
+#      log.md with no observation-log/ beside it, or a
+#      skill name with characters outside [A-Za-z0-9:._/-], an unknown
+#      option, or --correct with no reason, or an argument after --query-only,
+#      or more than one skill name (a second name, or a list in one
+#      argument): one call per Skill invocation, in that invocation's batch
 #
 # Why a script: a rule about what a tool batch must CONTAIN cannot be
 # enforced by prose inside the thing the batch loads — the agent reads the
 # prose only after the batch is committed. One call carrying both the lookup
 # and the checkpoint line, emitted beside the Skill invocation, leaves a
-# record a review can match against the invocation afterwards.
+# record a review can match against the invocation afterwards. The script
+# takes one name and refuses a second, so a list of skills about to be
+# loaded cannot be recorded in one call; a shell loop of single-name calls
+# looks the same from inside, so the one-call-per-invocation rule still
+# rests on the caller.
 #
 # Why no grep | xargs: file names are handed from find to awk with
 # `-exec … {} +`, never through a pipe, so a spaced path cannot split. (The
@@ -63,29 +88,64 @@ set -u
 
 root="${1:-}"
 name="${2:-}"
+mode="${3:-}"
+reason="${4:-}"
 
 if [ -z "$root" ] || [ -z "$name" ]; then
-  echo "usage: bash skill-load.sh <workspace-root> <skill-name>" >&2; exit 2
+  echo "usage: bash skill-load.sh <workspace-root> <skill-name> [--correct \"<reason>\" | --query-only]" >&2; exit 2
 fi
+if [ $# -gt 4 ]; then
+  echo "one skill name per call: got $# arguments — run one call per Skill invocation, in that invocation's batch" >&2; exit 2
+fi
+case "$mode" in
+  ("") ;;
+  ([!-]*) echo "one skill name per call: got a second name '$mode' — run one call per Skill invocation, in that invocation's batch; a lookup no Skill call rides with takes --query-only" >&2; exit 2 ;;
+  (--correct) [ -n "$reason" ] || { echo "--correct needs a reason: the refusal or error text" >&2; exit 2; } ;;
+  (--query-only) [ -z "$reason" ] || { echo "--query-only takes no argument: got '$reason'" >&2; exit 2; } ;;
+  (*) echo "unknown option '$mode' — the options are --correct \"<reason>\" and --query-only" >&2; exit 2 ;;
+esac
 case "$root" in
   (/*|[A-Za-z]:[/\\]*) ;;
   (*) echo "workspace root must be an ABSOLUTE path, never relative to the cwd: got '$root'" >&2; exit 2 ;;
 esac
 case "$name" in
+  (*[,\ ]*) echo "one skill name per call: '$name' is a list — run one call per Skill invocation, in that invocation's batch" >&2; exit 2 ;;
   (*[!A-Za-z0-9:._/-]*) echo "skill name may hold only [A-Za-z0-9:._/-]: got '$name'" >&2; exit 2 ;;
 esac
 
+# --- the tools: a missing command is named once, before anything runs -------
+miss=
+for t in find awk sed grep wc tr date; do
+  command -v "$t" >/dev/null 2>&1 || miss="$miss $t"
+done
+if [ -n "$miss" ]; then
+  printf 'LOOKUP TOOLS MISSING —%s not on PATH; nothing looked up, nothing written to checkpoints.log\n' "$miss"; exit 1
+fi
+
 # Every expansion of $root and $d stays double-quoted: the pinned path
 # routinely contains a space.
+if [ "$mode" = "--correct" ]; then
+  [ -d "$root" ] || { echo "workspace root does not exist: '$root' — check the pinned path" >&2; exit 2; }
+  if [ ! -d "$root/skill-observations" ]; then
+    echo "NOTE: $name: no skill-observations/ yet under '$root' — nothing to correct"; exit 0
+  fi
+  # One line, whatever the refusal text held.
+  reason=$(printf '%s' "$reason" | tr '\r\n' '  ')
+  printf '%s NOT loaded %s — %s\n' "$(date '+%F %H:%M')" "$name" "$reason" \
+    >> "$root/skill-observations/checkpoints.log"
+  exit 0
+fi
 d="$root/skill-observations/observation-log"
 if [ ! -d "$d" ]; then
-  # A missing log under a missing root is a wrong pin; under a pre-3.0
-  # log.md it is an unmigrated install; under an existing root it is the
-  # first run, where this call rides in the batch BEFORE step 1 creates
-  # the log — reported, not refused, so the first load is not a failure
-  # and the re-run after step 1 writes the checkpoint line.
+  # A missing root is refused, so a mistyped pin never creates a second
+  # workspace; the message names both readings, because the parent check
+  # that tells them apart stays with the caller (Session Start step 1).
+  # Under a pre-3.0 log.md it is an unmigrated install; under an existing
+  # root it is the first run, where this call rides in the batch BEFORE
+  # step 1 creates the log — reported, not refused, so the first load is
+  # not a failure and the re-run after step 1 writes the checkpoint line.
   if [ ! -d "$root" ]; then
-    echo "workspace root does not exist: '$root' — check the pinned path" >&2; exit 2
+    echo "workspace root does not exist: '$root' — if its parent exists and is writable this is a first run (run Workspace creation, then re-run this lookup); otherwise the pin is wrong" >&2; exit 2
   fi
   if [ -e "$root/skill-observations/log.md" ]; then
     echo "LEGACY log.md under '$root/skill-observations' and no observation-log/ — run the migration (references/migration.md) first" >&2; exit 2
@@ -135,6 +195,7 @@ fi
 
 printf '%s: %s open observations\n' "$name" "$count"
 [ -n "$matches" ] && printf '%s\n' "$matches"
+[ "$mode" = "--query-only" ] && exit 0
 
 printf '%s loaded %s — %s open observations\n' "$(date '+%F %H:%M')" "$name" "$count" \
   >> "$root/skill-observations/checkpoints.log"

@@ -3,25 +3,39 @@
 # as one command that cannot be split.
 #
 # Usage:
-#   bash scripts/new-observation.sh [--body <file>] <slug> [workspace-root]
+#   bash scripts/new-observation.sh [--body <entry-file>] <slug> [workspace-root]
 #
 #   <slug>            kebab-case, no id prefix, no extension ("short-slug")
 #   [workspace-root]  the pinned absolute workspace path — the directory that
 #                     holds skill-observations/. Defaults to the environment
 #                     variable TASK_OBSERVER_WORKSPACE. One of the two is
 #                     required; the log is never resolved from the cwd.
-#   --body <file>     optional, before or after the slug: once the file is
-#                     created, <file> (frontmatter and body, written by the
+#   --body <entry-file> optional, before or after the slug: once the file is
+#                     created, <entry-file> (the COMPLETE entry, frontmatter and body, written by the
 #                     caller with a QUOTED heredoc) is copied into it with
 #                     the literal placeholders __ID__ and __DATE__ replaced
 #                     everywhere by the issued id and today's date
 #                     (YYYY-MM-DD). A quoted heredoc cannot carry the id, and
 #                     an unquoted one runs every backticked span in the body;
 #                     this flag fills the two values so neither is needed.
+#                     The body's header is checked BEFORE anything is
+#                     touched: `status:` must read `open`, `type:` must be
+#                     `open-source` or `internal`, and `siblings_checked:`
+#                     must be non-empty, `title:` (its quotes aside) may
+#                     hold at most 200 characters, and no header line may trip the
+#                     scan's suspect-YAML rules (an unquoted `: ` and the
+#                     rest) — a header breaking any of these is refused by
+#                     name (BODY REFUSED) and no file, claim or floor write
+#                     happens. The three fields are the ones a writer
+#                     measurably forgets, the YAML shape the one the next
+#                     session's scan would catch too late; a rule with no
+#                     gate behind it is a convention; the gate is here
+#                     because this is the only write path.
 #
 # Prints the created file's absolute path on stdout (one line) and exits 0.
 # Any guard firing prints its message on stderr and exits 1 with NO file
-# created. The file is never empty: the create writes a frontmatter
+# created — TOOLS MISSING, a command the script runs absent from PATH,
+# first of all. The file is never empty: the create writes a frontmatter
 # skeleton — `id:` (the number, unpadded), `date:` today, `status: open`,
 # every other field present and empty — so a scan that meets it mid-write
 # reads a header with its id, not a LOST entry, and the id is on disk
@@ -39,11 +53,15 @@
 # needs the write path itself to enforce it. Where this script can run, it
 # is the only write path.
 #
-# Steps, in order: archival sweep of stale resolved files (a side effect of
+# Steps, in order: body header check (--body only; a refusal touches
+# nothing) → archival sweep of stale resolved files (a side effect of
 # deriving the id, never a separate duty; a same-named archived file is
 # never overwritten) → id = max(active prefixes, archive prefixes,
 # .id-floor) + 1, the listing guarded against find's count before the floor
-# enters → number claim (a noclobber marker per id in archive/.id-claims/,
+# enters → DUPLICATE PREFIX refusal (two files across active and archive
+# already sharing a number: no id is issued until one is renumbered; an
+# active file byte-identical to its archive/ copy is refused as RESURRECTED,
+# remove the active copy) → number claim (a noclobber marker per id in archive/.id-claims/,
 # so two writers running at once never share one) → PREFIX collision guard
 # across active and archive (two slugs sharing one number is the failure; a
 # path check cannot see it) → noclobber create of the skeleton → floor
@@ -79,10 +97,91 @@ done
 [ -n "$root" ] || root="${TASK_OBSERVER_WORKSPACE:-}"
 
 if [ -z "$slug" ]; then
-  echo "usage: new-observation.sh [--body <file>] <slug> [workspace-root]" >&2; exit 1
+  echo "usage: new-observation.sh [--body <entry-file>] <slug> [workspace-root]" >&2; exit 1
+fi
+# --- the tools: a missing command is named once, before anything runs -------
+miss=
+for t in find awk sed grep wc tr date sort tail mv mkdir cat sleep; do
+  command -v "$t" >/dev/null 2>&1 || miss="$miss $t"
+done
+if [ -n "$miss" ]; then
+  printf 'TOOLS MISSING —%s not on PATH; no id issued, no file created\n' "$miss" >&2; exit 1
 fi
 if [ -n "$body" ] && ! { [ -f "$body" ] && [ -r "$body" ]; }; then
   echo "--body file is missing or unreadable: '$body'" >&2; exit 1
+fi
+# --- the suspect-YAML rules of session-start-scan.sh, as one program `sus` ---
+# Kept in one form for both scripts: the selftest asserts the text between
+# the two markers is identical in each. Each rule prints the file, its
+# number and the line it fired on (rules: session-start-scan.sh, "suspect").
+# >>> sus: shared with session-start-scan.sh, byte for byte (the selftest compares them)
+key='^[a-z_]+:[ ]+([&!][^[:space:]]*[[:space:]]+)*'   # a key, its spaces, any &anchor or !tag
+hx='[[:xdigit:]]'   # one hex digit
+# cut_short N: N hex digits cut short — k hex digits (k < N), then a non-hex
+# character, as one alternation: cut_short 2 is `[^h]|h[^h]`, h being $hx.
+cut_short() {
+  local k i pre alt=
+  for ((k = 0; k < $1; k++)); do
+    pre=
+    for ((i = 0; i < k; i++)); do pre="$pre$hx"; done
+    alt="$alt${alt:+|}$pre[^[:xdigit:]]"
+  done
+  printf '%s' "$alt"
+}
+# The escapes a double-quoted YAML scalar defines: one character from the set,
+# or \x, \u, \U followed by exactly 2, 4 and 8 hex digits.
+esc_ok='\\[0abtnvfre \t\r"\/\\N_LP]|\\x'"$hx$hx"'|\\u'"$hx$hx$hx$hx"'|\\U'"$hx$hx$hx$hx$hx$hx$hx$hx"
+# What follows a backslash in an undefined escape: a character outside the
+# set, or \x, \u, \U with too few hex digits.
+esc_bad='[^0abtnvfre \t\r"\/\\N_LPxuU]|x('"$(cut_short 2)"')|u('"$(cut_short 4)"')|U('"$(cut_short 8)"')'
+sus='FNR==1 {sub(/^\357\273\277/, ""); fm = (/^---[[:space:]]*$/ ? 1 : 0); if (!fm) nextfile; next}
+  fm && /^---[[:space:]]*$/ {fm=0; nextfile}
+  fm && /'"$key"'[^"\047[{|>#&![:space:]].*: / {print FILENAME "\t3\t" $0; nextfile}
+  fm && /'"$key"'("([^"\\]|\\.)*"[[:space:]]*[^[:space:]#]|\047([^\047]|\047\047)*\047([[:space:]]+[^[:space:]#]|[^[:space:]#\047]))/ {print FILENAME "\t4\t" $0; nextfile}
+  fm && /'"$key"'[`@%]/ {print FILENAME "\t5\t" $0; nextfile}
+  fm && /'"$key"'"([^"\\]|('"$esc_ok"'))*\\('"$esc_bad"')/ {print FILENAME "\t6\t" $0; nextfile}
+  fm && /^[a-z_]+:[ ]+\[/ {v=$0; sub(/^[a-z_]+:[ ]+/,"",v); gsub(/"([^"\\]|\\.)*"/,"",v); gsub(/\047[^\047]*\047/,"",v); sub(/[[:space:]]#.*/,"",v); if (v ~ /:/) {print FILENAME "\t7\t" $0; nextfile}}'
+# <<< sus
+
+# --- body schema: refuse a header the log's rules forbid, before any write ---
+# Read as data, like the copy below. A value is taken bare, with a trailing
+# `# comment` (the core template carries one on status: and type:) and
+# trailing spaces stripped; status words stay bare, so a quoted `"open"` is
+# refused too — the archival sweep reads `$2` and would never match it.
+# title: is measured in characters, its enclosing quotes aside: under
+# LC_ALL=C awk counts bytes, so the UTF-8 continuation bytes (\200-\277) are
+# dropped before the count. A title is one line naming the defect; one that
+# grew past the limit carries the body's detail, and every listing of the
+# log (the scan's entries print first of all) pays for it.
+title_max=200
+if [ -n "$body" ]; then
+  why=$(LC_ALL=C awk -v tmax="$title_max" '
+    FNR==1 {sub(/^\357\273\277/, ""); if (/^---[[:space:]]*$/) fm=1; else nofm=1; next}
+    fm && /^---[[:space:]]*$/ {closed=1; exit}
+    fm && /^status:/ {st=$0; sub(/^status:[[:space:]]*/, "", st); sub(/[[:space:]]+#.*$/, "", st); sub(/[[:space:]]+$/, "", st); hs=1}
+    fm && /^type:/ {ty=$0; sub(/^type:[[:space:]]*/, "", ty); sub(/[[:space:]]+#.*$/, "", ty); sub(/[[:space:]]+$/, "", ty); ht=1}
+    fm && /^siblings_checked:/ {sc=$0; sub(/^siblings_checked:[[:space:]]*/, "", sc); sub(/[[:space:]]+$/, "", sc); hc=1}
+    fm && /^title:/ {ti=$0; sub(/^title:[[:space:]]*/, "", ti); sub(/[[:space:]]+$/, "", ti)
+      if (ti ~ /^".*"$/ || ti ~ /^\047.*\047$/) ti = substr(ti, 2, length(ti) - 2)
+      gsub(/[\200-\277]/, "", ti); tl = length(ti)}
+    END {
+      if (nofm) {print "line 1 is not ---"; exit}
+      if (!closed) {print "the header never closes (no second ---)"; exit}
+      if (!hs || st != "open") print "status: must read open" (hs ? " (read \047" st "\047)" : " (missing)")
+      if (!ht || (ty != "open-source" && ty != "internal")) print "type: must be open-source or internal" (ht ? " (read \047" ty "\047)" : " (missing)")
+      if (!hc || sc == "" || sc == "\"\"" || sc == "\047\047") print "siblings_checked: must be non-empty" (hc ? "" : " (missing)")
+      if (tl > tmax) print "title: is " tl " characters, over the " tmax "-character limit — shorten it to one line that names the defect (the detail belongs in the body)"
+    }' "$body")
+  # The scan's suspect rules, run here before the write: a header the next
+  # session's scan would flag as invalid YAML is refused by name instead.
+  sh_why=$(LC_ALL=C awk "$sus" "$body" | awk -F '\t' '{k=$3; sub(/:.*/, "", k)
+    r = ($2 == 3 ? "holds an unquoted \047: \047" : $2 == 4 ? "has text after its closing quote" : $2 == 5 ? "opens with a backtick, @ or %" : $2 == 6 ? "holds an escape YAML does not define" : "is a [ ] list with a colon outside quotes")
+    print k ": " r " — fix or quote the value (line: " $3 ")"}')
+  [ -n "$sh_why" ] && why="$why${why:+
+}$sh_why"
+  if [ -n "$why" ]; then
+    printf 'BODY REFUSED — no file created; fix the header of %s:\n%s\n' "$body" "$why" >&2; exit 1
+  fi
 fi
 case $slug in
   (*[!a-z0-9-]*|-*|*-|*--*|"")
@@ -126,8 +225,8 @@ fi
 # large log); one mv per stale resolved file, bounded by the files due
 ( cd "$d" && LC_ALL=C awk -v today="$today" 'FNR==1 {st=""; r=""; sub(/^\357\273\277/, ""); fm=/^---[[:space:]]*$/; if (!fm) nextfile; next}
     fm && /^---[[:space:]]*$/ {if (st ~ /^(actioned|declined|superseded)$/ && r ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/ && r < today) print FILENAME; nextfile}
-    fm && /^status:/ {st=$2}
-    fm && /^resolved:/ {r=$2}' [0-9]*.md 2>/dev/null | while IFS= read -r x; do
+    fm && /^status:/ {st=$2; gsub(/["\047]/, "", st)}
+    fm && /^resolved:/ {r=$2; gsub(/["\047]/, "", r)}' [0-9]*.md 2>/dev/null | while IFS= read -r x; do
       mv -n "$x" archive/ 2>/dev/null   # -n: never overwrite a same-named archived file
       if [ -e "$x" ]; then
         if [ -e "archive/$x" ]; then echo "NOTE: $x not archived — archive/$x already exists; compare the two copies by hand" >&2
@@ -151,6 +250,30 @@ for attempt in 1 2 3; do
   fi
   sleep 1
 done
+
+# --- duplicate prefix: no id is issued while two files share one ------------
+# The uniqueness invariant is enforced here, on the write path, where it can
+# break; the scan's DUPLICATE ID line only reports it when read. Numbers are
+# compared as numbers, so 0007- and 7- are one id. The renumber keeps the
+# cited (else the earlier) file's number and re-creates the other through
+# this helper, which this refusal would block while both are listed: so it is
+# moved out of the listing first (a leading dot, which no `[0-9]*.md` glob
+# sees), re-created from it with --body, and the moved copy deleted.
+dup=$(for p in "$d"/[0-9]*.md "$d"/archive/[0-9]*.md; do [ -e "$p" ] && printf '%s\n' "${p#"$d"/}"; done \
+  | LC_ALL=C awk '{b=$0; sub(/^archive\//, "", b); n=substr(b, 1, match(b, /[^0-9]/) - 1) + 0; if (n in s) {print n "|" s[n] "|" $0; exit}; s[n]=$0}')
+if [ -n "$dup" ]; then
+  dn=${dup%%|*}; rest=${dup#*|}
+  # An active file byte-identical to its same-named archive/ copy is a
+  # restored archive entry (a sync or mirror), not a collision: never renumber.
+  d1=${rest%%|*}; d2=${rest#*|}
+  if [ "archive/$d1" = "$d2" ] && command -v cmp >/dev/null 2>&1 && cmp -s "$d/$d1" "$d/$d2"; then
+    printf 'RESURRECTED — %s is byte-identical to %s: a sync or mirror restored an archived entry; no id is issued while it stands. Remove the active copy (never renumber it) and record the sync client (references/environments.md, "Stable is not the same as always available")\n' "$d1" "$d2" >&2
+    exit 1
+  fi
+  printf 'DUPLICATE PREFIX — id %s is carried by both %s and %s; no id is issued while it stands. Renumber first: keep the number on the file something cites, else the earlier one (by date:); move the other out of the listing (rename it with a leading dot), set its id: to __ID__, re-create it with --body <the moved file>, then delete the moved copy; or renumber it in one step with a set-fields.sh rename line (references/observation-log.md, "Assigning an id")\n' \
+    "$dn" "${rest%%|*}" "${rest#*|}" >&2
+  exit 1
+fi
 hi=$(printf '%s\n' "$ids" | sort -n | tail -1); hi=$((10#${hi:-0}))
 if [ "$hi" -lt "$floor" ]; then
   echo "NOTE: highest file id $hi is below .id-floor $floor — ids issued without a file; the new id goes above the floor" >&2
@@ -200,11 +323,15 @@ fi
 # with its id from the first instant it exists. An empty file in the log is
 # a LOST entry by definition (the scan says so), and a create that leaves
 # one is a LOST entry for as long as the caller takes to write the body.
-# The field list mirrors the core template (How to Log); `title:` is left
-# empty on purpose — the scan reports a header with an empty title as
-# UNFILLED, a write in progress or abandoned, distinct from LOST.
+# The field list mirrors the core template (How to Log) in its order, the
+# optional and conditional fields included (commands_verified, next_actor,
+# use_evidence, escalated): a copy that claims to mirror a template drifts the moment
+# the template gains a field, so the selftest asserts each field is here.
+# `title:` is left empty on purpose — the scan reports a header with an
+# empty title as UNFILLED, a write in progress or abandoned, distinct from
+# LOST.
 f="$d/${prefix}-${slug}.md"
-skel=$(printf '%s\nid: %s\ntitle: ""\nstatus: open\ntype:\nskill: []\nproposes_skill: []\ntarget_file: []\nsiblings_checked: ""\narea: ""\ndate: %s\nsession_context: ""\nparked_until:\nresolved:\nresolution:\nreference:\n---' --- "$next_id" "$today")   # the format opens with %s: a leading --- reads as an option
+skel=$(printf '%s\nid: %s\ntitle: ""\nstatus: open\ntype:\nskill: []\nproposes_skill: []\ntarget_file: []\nsiblings_checked: ""\narea: ""\ndate: %s\nsession_context: ""\nparked_until:\nresolved:\nresolution:\nreference:\ncommands_verified:\nnext_actor:\nuse_evidence:\nescalated:\n---' --- "$next_id" "$today")   # the format opens with %s: a leading --- reads as an option
 if ! (set -C; printf '%s\n' "$skel" > "$f") 2>/dev/null; then
   echo "CREATE FAILED — $f exists or is unwritable" >&2; exit 1
 fi

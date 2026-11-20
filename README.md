@@ -28,7 +28,7 @@ Collection of skills for Antigravity, Claude Code, Cursor, Codex, and other AI c
 - **`javafx-precison-coding`**: Production-grade JavaFX development without hardcoded values.
 
 ### Execution & Superpowers
-- **`using-superpowers`**: Disciplined skill-first agent execution workflow.
+- **`using-superpowers` / `diagnosing-superpowers`**: Disciplined skill-first agent execution workflow and session diagnostics.
 - **`brainstorming`**: Collaborative requirement exploration before implementation.
 - **`executing-plans`**: Step-by-step implementation plan execution with checkpoints.
 - **`writing-plans`**: Structural planning for multi-step tasks.
@@ -40,9 +40,10 @@ Collection of skills for Antigravity, Claude Code, Cursor, Codex, and other AI c
 - **`precision-diagnostics`**: Multi-phase root-cause diagnosis.
 - **`continuous-learning` / `continuous-learning-v2`**: Autonomous observation, pattern learning, and continuous improvement protocol.
 - **`task-observer`**: Autonomous task observation and workflow reflection.
+- **`pstack` suite (`poteto-mode`, `architect`, `arena`, `interrogate`, `sharpen`, `unslop`, `principle-*`, etc.)**: Engineering principles, planning, verification, and autonomous execution playbooks.
 
 ### Efficiency & Formatting
-- **`caveman` / `caveman-th` / `caveman-coding` / `caveman-plan`**: Token-efficient ultra-terse response and execution modes.
+- **`caveman` / `ultracave` / `megacave` / `caveman-th` / `caveman-coding` / `caveman-plan`**: Token-efficient ultra-terse response and execution modes.
 - **`ponytail` suite (`ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`)**: Ruthless simplicity and YAGNI principle enforcement.
 - **`humanizer` / `humanizer-th`**: Natural prose re-writing without AI stylistic tells.
 
@@ -53,6 +54,8 @@ Collection of skills for Antigravity, Claude Code, Cursor, Codex, and other AI c
 - **`full-system-audit`**: High-level and detailed project audit.
 - **`flowchart-designer`**: System flowchart design.
 - **`frontend-slides`**: HTML/CSS web presentation decks.
+- **`design-taste-frontend` / `ui-ux-pro-max` / `impeccable`**: High-craft UI/UX design systems, layout, and frontend polish.
+- **`hindsight-coding-agent`**: Long-term coding-agent memory configuration and retrieval guide.
 - **`pptx-generator` / `elite-powerpoint-designer`**: PowerPoint generation and formatting.
 - **`office-mcp`**: Microsoft Office MCP tools integration.
 - **`omp-add-provider`**: Oh My Pi model provider configuration.
